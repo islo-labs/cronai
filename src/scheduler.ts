@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { homedir } from "node:os";
 import cron from "node-cron";
@@ -63,6 +63,41 @@ function saveJobLog(name: string, result: JobResult) {
   writeFileSync(logFile, header + "\n" + result.output + (result.error ? "\n\nSTDERR:\n" + result.error : "") + "\n");
 }
 
+function loadLatestLog(name: string): JobResult | undefined {
+  if (!existsSync(LOGS_DIR)) return undefined;
+
+  const files = readdirSync(LOGS_DIR)
+    .filter((f) => f.startsWith(name + "-") && f.endsWith(".log"))
+    .sort()
+    .reverse();
+
+  if (files.length === 0) return undefined;
+
+  const content = readFileSync(resolve(LOGS_DIR, files[0]), "utf-8");
+  const divider = content.indexOf("---\n");
+  const header = divider >= 0 ? content.slice(0, divider) : "";
+  const body = divider >= 0 ? content.slice(divider + 4) : content;
+
+  const success = header.includes("Status: success");
+  const durationMatch = header.match(/Duration: ([\d.]+)s/);
+  const exitMatch = header.match(/Exit code: (\d+|null)/);
+  const costMatch = header.match(/Cost: \$([\d.]+)/);
+
+  // Split body into output and stderr
+  const stderrIdx = body.indexOf("\n\nSTDERR:\n");
+  const output = stderrIdx >= 0 ? body.slice(0, stderrIdx) : body.trimEnd();
+  const error = stderrIdx >= 0 ? body.slice(stderrIdx + 9).trimEnd() : undefined;
+
+  return {
+    success,
+    output,
+    error,
+    durationMs: durationMatch ? parseFloat(durationMatch[1]) * 1000 : 0,
+    exitCode: exitMatch?.[1] === "null" ? null : parseInt(exitMatch?.[1] ?? "0"),
+    cost: costMatch ? parseFloat(costMatch[1]) : undefined,
+  };
+}
+
 // --- Scheduler ---
 
 export class Scheduler {
@@ -83,6 +118,7 @@ export class Scheduler {
       this.jobs.set(config.name, {
         config,
         status: past?.status ?? "idle",
+        lastResult: loadLatestLog(config.name),
         lastRun: past?.lastRun ? new Date(past.lastRun) : undefined,
         nextRun: nextRun(config.schedule),
       });
