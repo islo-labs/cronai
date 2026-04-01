@@ -6,7 +6,7 @@ itsovertime is intentionally small. The goal is a codebase you can read in one s
 
 **The agent is the integration layer.** itsovertime doesn't need a GitHub client, Linear SDK, or Slack library. The agent already knows how to use those. itsovertime just schedules and watches. If you're about to add an integration, ask yourself: can the agent just do this as part of its task?
 
-**Skills over features.** The preferred way to extend itsovertime is with Claude Code skills — small, focused modifications to the source. A 10-line change to `runner.ts` that adds Cursor support is better than a 200-line plugin system. Submit skills, not frameworks.
+**Small changes over big features.** A 10-line change to `runner.ts` that adds Cursor support is better than a 200-line plugin system. Keep it simple.
 
 **No abstraction without repetition.** Don't add interfaces, registries, or factories for things that exist once. Three similar lines are better than a premature abstraction.
 
@@ -51,7 +51,7 @@ npm run build        # build for distribution
 - **New schedule patterns** — add to `parseToCron()` in `cron.ts`
 - **Agent support** — modify `runner.ts` to support a new CLI
 - **TUI improvements** — better layout, keybinds, views
-- **Skills** — self-contained changes that others can apply to their fork
+- **Small, self-contained changes** that others can apply to their fork
 
 ## What to avoid
 

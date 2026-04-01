@@ -142,7 +142,7 @@ That's it. No daemon, no database, no queue. One process, one config file.
 
 - **The agent is the integration layer.** itsovertime doesn't talk to GitHub, Linear, or Slack. The agent does. itsovertime just schedules and watches.
 - **One process, handful of files.** Small enough to understand completely. Read the whole source in one sitting.
-- **Skills over features.** New capabilities come from Claude Code skills that modify the source — not config options, plugin systems, or abstraction layers.
+- **Small by design.** New capabilities come from modifying the source — not config options, plugin systems, or abstraction layers. The whole codebase is 9 files.
 - **No magic.** It reads YAML, runs cron, spawns a CLI, and draws a table. You can trace the entire flow in 10 minutes.
 
 ## License
