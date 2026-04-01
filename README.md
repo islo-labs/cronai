@@ -97,8 +97,6 @@ Want to add something? Ask Claude to do it:
 
 The codebase is 9 files and ~600 lines. Small enough that Claude (or you) can read the whole thing, understand it, and change it confidently. That's the point — the code *is* the configuration layer.
 
-This is the same approach as [nanoclaw](https://github.com/qwibitai/nanoclaw): contributors submit skills, not features.
-
 ## How it works
 
 overtime is a single Node.js process that:
