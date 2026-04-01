@@ -2,12 +2,37 @@
 
 Cron for AI agents. Schedule agent tasks like you schedule cron jobs.
 
+## Automated PR reviews in 30 seconds
+
+```bash
+npx overtime init
+```
+
 ```yaml
 # overtime.yml
 jobs:
   - name: pr-review
-    schedule: "every day at 9am"
-    task: "Review open PRs in this repo and leave comments"
+    schedule: "every hour"
+    task: >
+      Review all open PRs in this repo. For each PR, check out the branch,
+      read the diff, and leave a review comment on GitHub covering: code quality,
+      potential bugs, security issues, and test coverage. Approve if it looks good.
+    notify: slack
+```
+
+```bash
+npx overtime
+```
+
+That's it. Every hour, Claude reviews your open PRs and leaves comments on GitHub. You get a Slack notification when it's done.
+
+## More examples
+
+```yaml
+jobs:
+  - name: pr-review
+    schedule: "every hour"
+    task: "Review all open PRs — check for bugs, security issues, and style. Leave comments on GitHub."
     notify: slack
 
   - name: dep-updates
@@ -18,7 +43,17 @@ jobs:
     schedule: "every 4 hours"
     task: "Check Linear for bugs labeled 'needs-triage', add priority labels"
     notify: slack
+
+  - name: stale-prs
+    schedule: "every weekday at 9am"
+    task: "Find PRs with no activity for 3+ days, ping the authors with a friendly reminder comment"
+
+  - name: changelog
+    schedule: "every friday at 5pm"
+    task: "Look at all PRs merged this week, write a changelog entry and commit it"
 ```
+
+## Dashboard
 
 ```
 $ npx overtime
@@ -26,7 +61,7 @@ $ npx overtime
 ┌─ overtime ──────────────────────────────────────────┐
 │                                                     │
 │  JOB           SCHEDULE        STATUS    NEXT RUN   │
-│  pr-review     daily at 9am    idle      in 3h 22m  │
+│  pr-review     every hour      idle      in 22m     │
 │  dep-updates   Mon at 2am     ✓ done    in 4d 11h  │
 │  bug-triage    every 4 hours   ⟳ running in 1h 05m  │
 │                                                     │
@@ -37,8 +72,8 @@ $ npx overtime
 ## Getting started
 
 ```bash
-npx overtime init    # connect GitHub, Linear, Slack — creates overtime.yml
-npx overtime         # start the dashboard
+npx overtime init           # connect GitHub, Linear, Slack — creates overtime.yml
+npx overtime                # start the dashboard
 npx overtime run pr-review  # test a single job
 ```
 
@@ -46,15 +81,7 @@ npx overtime run pr-review  # test a single job
 
 overtime does exactly one thing: run `claude --print <task>` on a schedule and show you what happened.
 
-It doesn't have GitHub integrations, Linear clients, or Slack SDKs. It doesn't need them. The agent already knows how to use `gh`, call APIs, and post to Slack. You just tell it what to do in plain English:
-
-```yaml
-- name: notify-slack
-  schedule: "every day at 9am"
-  task: "Review open PRs and post a summary to #dev in Slack"
-```
-
-Claude handles the rest. overtime is just the clock.
+It doesn't have GitHub integrations, Linear clients, or Slack SDKs. It doesn't need them. The agent already knows how to use `gh`, call APIs, and post to Slack. You just tell it what to do in plain English. overtime is just the clock.
 
 ## Schedules
 
@@ -107,7 +134,8 @@ overtime is a single Node.js process that:
 1. Reads `overtime.yml` and parses natural language schedules into cron
 2. Runs a cron loop — when a job fires, spawns `claude --print` with the task
 3. Shows job state in a live TUI dashboard
-4. Prevents overlap — if a job is still running when its next cron fires, it skips
+4. Sends a Slack notification when jobs complete
+5. Prevents overlap — if a job is still running when its next cron fires, it skips
 
 That's it. No daemon, no database, no queue. One process, one config file.
 
