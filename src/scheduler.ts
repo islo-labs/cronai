@@ -106,14 +106,19 @@ export class Scheduler {
         notifySlack(name, result, this.credentials).catch(() => {});
       }
     } catch (err) {
-      state.status = "error";
-      state.lastResult = {
+      const errorResult: JobResult = {
         success: false,
         output: "",
         error: (err as Error).message,
         durationMs: 0,
         exitCode: null,
       };
+      state.status = "error";
+      state.lastResult = errorResult;
+
+      if (state.config.notify === "slack") {
+        notifySlack(name, errorResult, this.credentials).catch(() => {});
+      }
     } finally {
       this.abortControllers.delete(name);
       this.notify();

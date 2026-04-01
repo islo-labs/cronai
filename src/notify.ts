@@ -12,7 +12,7 @@ export async function notifySlack(
   const status = result.success ? ":white_check_mark: Success" : ":x: Failed";
   const duration = (result.durationMs / 1000).toFixed(1);
   const cost = result.cost ? ` | $${result.cost.toFixed(4)}` : "";
-  const output = result.output.slice(0, 500);
+  const output = (result.output || result.error || "").slice(0, 500);
 
   const text = [
     `*${jobName}* — ${status}`,
