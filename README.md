@@ -108,10 +108,11 @@ jobs:
   - name: my-job        # lowercase, alphanumeric, dashes
     schedule: "every day at 9am"
     task: "What the agent should do"
-    notify: slack       # optional — Slack notification on completion
-    model: sonnet       # optional — Claude model to use
-    timeout: 300        # optional — max seconds (default: 300)
-    workdir: ./myrepo   # optional — working directory for the agent
+    notify: slack          # optional — Slack notification on completion
+    notifyChannel: "#alerts"  # optional — override Slack channel for this job
+    model: sonnet          # optional — Claude model to use
+    timeout: 300           # optional — max seconds (default: 300)
+    workdir: ./myrepo      # optional — working directory for the agent
 ```
 
 ## Skills

@@ -14,6 +14,7 @@ const JobSchema = z.object({
   task: z.string().min(1),
   agent: z.string().default("claude"),
   notify: z.enum(["slack"]).optional(),
+  notifyChannel: z.string().optional(),
   model: z.string().optional(),
   maxBudget: z.number().positive().optional(),
   timeout: z.number().positive().default(300),
@@ -28,6 +29,7 @@ const ConfigSchema = z
         agent: z.string().optional(),
         timeout: z.number().positive().optional(),
         notify: z.enum(["slack"]).optional(),
+        notifyChannel: z.string().optional(),
       })
       .optional(),
     jobs: z.array(JobSchema).min(1, "At least one job is required"),
@@ -120,6 +122,9 @@ export function loadConfig(configPath?: string): OvertimeConfig {
       }
       if (defaults.notify && !job.notify) {
         job.notify = defaults.notify;
+      }
+      if (defaults.notifyChannel && !job.notifyChannel) {
+        job.notifyChannel = defaults.notifyChannel;
       }
     }
   }

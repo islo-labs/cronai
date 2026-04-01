@@ -4,7 +4,8 @@ import type { Credentials } from "./config.js";
 export async function notifySlack(
   jobName: string,
   result: JobResult,
-  credentials?: Credentials
+  credentials?: Credentials,
+  channel?: string
 ): Promise<void> {
   const webhook = credentials?.slackWebhookUrl ?? process.env.SLACK_WEBHOOK_URL;
   if (!webhook) return;
@@ -22,11 +23,14 @@ export async function notifySlack(
     .filter(Boolean)
     .join("\n");
 
+  const payload: Record<string, string> = { text };
+  if (channel) payload.channel = channel;
+
   try {
     await fetch(webhook, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify(payload),
     });
   } catch (err) {
     console.error(`Slack notification failed: ${(err as Error).message}`);

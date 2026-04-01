@@ -165,7 +165,7 @@ export class Scheduler {
       saveJobLog(name, result);
 
       if (state.config.notify === "slack") {
-        notifySlack(name, result, this.credentials).catch(() => {});
+        notifySlack(name, result, this.credentials, state.config.notifyChannel).catch(() => {});
       }
     } catch (err) {
       state.status = "error";
