@@ -1,17 +1,16 @@
 import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { homedir } from "node:os";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod";
-import { validateCron } from "./cron.js";
+import { parseToCron } from "./cron.js";
 
 const JobSchema = z.object({
   name: z
     .string()
     .min(1)
     .regex(/^[a-z0-9-]+$/, "Job name must be lowercase alphanumeric with dashes"),
-  schedule: z.string().refine((s) => validateCron(s).valid, {
-    message: "Invalid cron expression",
-  }),
+  schedule: z.string(),
   task: z.string().min(1),
   agent: z.string().default("claude"),
   notify: z.enum(["slack"]).optional(),
@@ -44,6 +43,38 @@ const ConfigSchema = z
 export type JobConfig = z.infer<typeof JobSchema>;
 export type OvertimeConfig = z.infer<typeof ConfigSchema>;
 
+// --- Credentials ---
+
+export interface Credentials {
+  githubToken?: string;
+  linearApiKey?: string;
+  slackWebhookUrl?: string;
+  anthropicApiKey?: string;
+}
+
+export function loadCredentials(): Credentials {
+  const credPath = resolve(homedir(), ".overtime", "credentials.json");
+  let stored: Record<string, string> = {};
+
+  if (existsSync(credPath)) {
+    try {
+      stored = JSON.parse(readFileSync(credPath, "utf-8"));
+    } catch {
+      // Corrupted file, ignore
+    }
+  }
+
+  // Env vars override stored credentials
+  return {
+    githubToken: process.env.GITHUB_TOKEN ?? stored.githubToken,
+    linearApiKey: process.env.LINEAR_API_KEY ?? stored.linearApiKey,
+    slackWebhookUrl: process.env.SLACK_WEBHOOK_URL ?? stored.slackWebhookUrl,
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? stored.anthropicApiKey,
+  };
+}
+
+// --- Config loading ---
+
 function resolveEnvVars(text: string): string {
   return text.replace(/\$\{(\w+)\}/g, (_, name) => process.env[name] ?? "");
 }
@@ -57,7 +88,7 @@ export function loadConfig(configPath?: string): OvertimeConfig {
 
   if (!found) {
     console.error(
-      `No config file found. Create overtime.yml or specify --config <path>`
+      `No config file found. Run "overtime init" to get started, or create overtime.yml manually.`
     );
     process.exit(1);
   }
@@ -91,6 +122,19 @@ export function loadConfig(configPath?: string): OvertimeConfig {
         job.notify = defaults.notify;
       }
     }
+  }
+
+  // Convert natural language schedules to cron
+  for (const job of config.jobs) {
+    const cron = parseToCron(job.schedule);
+    if (!cron) {
+      console.error(
+        `Invalid schedule for job "${job.name}": "${job.schedule}"\n` +
+          `  Examples: "every hour", "every day at 9am", "every monday at 2pm"`
+      );
+      process.exit(1);
+    }
+    job.schedule = cron;
   }
 
   return config;

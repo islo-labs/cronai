@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Text, useInput, useApp } from "ink";
 import type { JobState, JobStatus } from "./scheduler.js";
-import { formatRelativeTime } from "./cron.js";
+import { formatRelativeTime, describeCron } from "./cron.js";
 
 // --- Status formatting ---
 
@@ -65,7 +65,7 @@ function JobRow({
       <Text inverse={selected}>
         <Text>{pointer}</Text>
         <Text bold={selected}>{pad(job.config.name, COL.name)}</Text>
-        <Text dimColor>{pad(job.config.schedule, COL.schedule)}</Text>
+        <Text dimColor>{pad(describeCron(job.config.schedule), COL.schedule)}</Text>
         <Text color={color}>{pad(statusLabel(job.status), COL.status)}</Text>
         <Text>{formatRelativeTime(job.nextRun)}</Text>
       </Text>

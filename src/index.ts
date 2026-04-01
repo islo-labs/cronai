@@ -1,5 +1,5 @@
 import { program } from "commander";
-import { loadConfig } from "./config.js";
+import { loadConfig, loadCredentials } from "./config.js";
 import { Scheduler } from "./scheduler.js";
 import { runJob } from "./runner.js";
 import { notifySlack } from "./notify.js";
@@ -17,9 +17,9 @@ program
   .action(async (_, cmd) => {
     const opts = cmd.optsWithGlobals();
     const config = loadConfig(opts.config);
-    const scheduler = new Scheduler(config.jobs);
+    const credentials = loadCredentials();
+    const scheduler = new Scheduler(config.jobs, credentials);
 
-    // Dynamic import to avoid loading React for `run` command
     const { render } = await import("ink");
     const React = await import("react");
     const { App } = await import("./app.js");
@@ -28,7 +28,6 @@ program
       React.createElement(App, { scheduler })
     );
 
-    // Handle SIGINT/SIGTERM
     const shutdown = async () => {
       await scheduler.stop();
       unmount();
@@ -47,6 +46,7 @@ program
   .action(async (jobName: string, _, cmd) => {
     const opts = cmd.optsWithGlobals();
     const config = loadConfig(opts.config);
+    const credentials = loadCredentials();
     const job = config.jobs.find((j) => j.name === jobName);
 
     if (!job) {
@@ -58,7 +58,7 @@ program
     }
 
     console.log(`Running "${jobName}"...`);
-    const result = await runJob(job);
+    const result = await runJob(job, credentials);
 
     console.log(result.output);
     if (result.error) console.error(result.error);
@@ -70,10 +70,19 @@ program
     );
 
     if (job.notify === "slack") {
-      await notifySlack(jobName, result);
+      await notifySlack(jobName, result, credentials);
     }
 
     process.exit(result.success ? 0 : 1);
+  });
+
+// Init wizard
+program
+  .command("init")
+  .description("Set up overtime: connect services and create config")
+  .action(async () => {
+    const { init } = await import("./init.js");
+    await init();
   });
 
 program.parse();

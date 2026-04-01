@@ -1,10 +1,12 @@
 import type { JobResult } from "./runner.js";
+import type { Credentials } from "./config.js";
 
 export async function notifySlack(
   jobName: string,
-  result: JobResult
+  result: JobResult,
+  credentials?: Credentials
 ): Promise<void> {
-  const webhook = process.env.SLACK_WEBHOOK_URL;
+  const webhook = credentials?.slackWebhookUrl ?? process.env.SLACK_WEBHOOK_URL;
   if (!webhook) return;
 
   const status = result.success ? ":white_check_mark: Success" : ":x: Failed";

@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import type { JobConfig } from "./config.js";
+import type { JobConfig, Credentials } from "./config.js";
 
 export interface JobResult {
   success: boolean;
@@ -12,6 +12,7 @@ export interface JobResult {
 
 export function runJob(
   job: JobConfig,
+  credentials?: Credentials,
   signal?: AbortSignal
 ): Promise<JobResult> {
   return new Promise((resolve) => {
@@ -23,9 +24,15 @@ export function runJob(
 
     args.push(job.task);
 
+    // Inject stored credentials as env vars so the agent can use them
+    const credEnv: Record<string, string> = {};
+    if (credentials?.githubToken) credEnv.GITHUB_TOKEN = credentials.githubToken;
+    if (credentials?.linearApiKey) credEnv.LINEAR_API_KEY = credentials.linearApiKey;
+    if (credentials?.anthropicApiKey) credEnv.ANTHROPIC_API_KEY = credentials.anthropicApiKey;
+
     const child = spawn("claude", args, {
       cwd: job.workdir ?? process.cwd(),
-      env: { ...process.env, ...job.env },
+      env: { ...process.env, ...credEnv, ...job.env },
       stdio: ["ignore", "pipe", "pipe"],
       signal,
     });

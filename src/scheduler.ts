@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import type { JobConfig } from "./config.js";
+import type { JobConfig, Credentials } from "./config.js";
 import { runJob, type JobResult } from "./runner.js";
 import { notifySlack } from "./notify.js";
 import { nextRun } from "./cron.js";
@@ -20,7 +20,10 @@ export class Scheduler {
   private abortControllers = new Map<string, AbortController>();
   private listeners: Array<() => void> = [];
 
-  constructor(private configs: JobConfig[]) {
+  constructor(
+    private configs: JobConfig[],
+    private credentials: Credentials = {}
+  ) {
     for (const config of configs) {
       this.jobs.set(config.name, {
         config,
@@ -91,7 +94,7 @@ export class Scheduler {
     this.notify();
 
     try {
-      const result = await runJob(state.config, controller.signal);
+      const result = await runJob(state.config, this.credentials, controller.signal);
 
       state.status = result.success ? "done" : "error";
       state.lastResult = result;
@@ -100,7 +103,7 @@ export class Scheduler {
 
       // Fire-and-forget notification
       if (state.config.notify === "slack") {
-        notifySlack(name, result).catch(() => {});
+        notifySlack(name, result, this.credentials).catch(() => {});
       }
     } catch (err) {
       state.status = "error";
