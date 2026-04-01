@@ -1,16 +1,16 @@
-# overtime
+# itsovertime
 
 Cron for AI agents. Schedule agent tasks like you schedule cron jobs.
 
 ## Automated PR reviews in 30 seconds
 
 ```bash
-npx overtime init
+npx itsovertime init
 ```
 
 ```yaml
 # overtime.yml
-jobs:
+shifts:
   - name: pr-review
     schedule: "every hour"
     task: >
@@ -21,7 +21,7 @@ jobs:
 ```
 
 ```bash
-npx overtime
+npx itsovertime
 ```
 
 That's it. Every hour, Claude reviews your open PRs and leaves comments on GitHub. You get a Slack notification when it's done.
@@ -29,7 +29,7 @@ That's it. Every hour, Claude reviews your open PRs and leaves comments on GitHu
 ## More examples
 
 ```yaml
-jobs:
+shifts:
   - name: pr-review
     schedule: "every hour"
     task: "Review all open PRs — check for bugs, security issues, and style. Leave comments on GitHub."
@@ -56,14 +56,14 @@ jobs:
 ## Dashboard
 
 ```
-$ npx overtime
+$ npx itsovertime
 
-┌─ overtime ────────────────────────────────────────────────────┐
+┌─ itsovertime ─────────────────────────────────────────────────┐
 │                                                               │
-│  JOB           SCHEDULE        STATUS    LAST RUN   NEXT RUN  │
-│  pr-review     every hour      idle      3h ago     in 22m    │
-│  dep-updates   Mon at 2am     ✓ done    1d ago     in 4d 11h │
-│  bug-triage    every 4 hours   ⟳ running -          in 1h 05m │
+│  SHIFT          SCHEDULE        STATUS    LAST RUN   NEXT RUN │
+│  pr-review      every hour      idle      3h ago     in 22m   │
+│  dep-updates    Mon at 2am     ✓ done    1d ago     in 4d 11h│
+│  bug-triage     every 4 hours   ⟳ running -          in 1h 05m│
 │                                                               │
 │  [↑↓] select  [r] run  [s] resume session  [d] delete        │
 │  [enter] output  [q] quit                                     │
@@ -73,22 +73,22 @@ $ npx overtime
 ## Getting started
 
 ```bash
-npx overtime init           # connect GitHub, Linear, Slack — creates overtime.yml
-npx overtime                # start the dashboard
-npx overtime run pr-review  # test a single job
+npx itsovertime init           # connect GitHub, Linear, Slack — creates overtime.yml
+npx itsovertime                # start the dashboard
+npx itsovertime run pr-review  # test a single shift
 ```
 
 ## Resume sessions
 
-When a job finishes, press `s` to drop into the Claude session where it left off. This lets you inspect what the agent did, ask follow-up questions, or continue the work interactively.
+When a shift finishes, press `s` to drop into the Claude session where it left off. This lets you inspect what the agent did, ask follow-up questions, or continue the work interactively.
 
 The agent ran overnight and opened a PR but you want to tweak it? Press `s` and you're in the same conversation with full context.
 
 ## Why it's small
 
-overtime does exactly one thing: run `claude --print <task>` on a schedule and show you what happened.
+itsovertime does exactly one thing: run `claude --print <task>` on a schedule and show you what happened.
 
-It doesn't have GitHub integrations, Linear clients, or Slack SDKs. It doesn't need them. The agent already knows how to use `gh`, call APIs, and post to Slack. You just tell it what to do in plain English. overtime is just the clock.
+It doesn't have GitHub integrations, Linear clients, or Slack SDKs. It doesn't need them. The agent already knows how to use `gh`, call APIs, and post to Slack. You just tell it what to do in plain English. itsovertime is just the clock.
 
 ## Schedules
 
@@ -111,8 +111,8 @@ Standard cron expressions (`0 9 * * *`) also work if you prefer them.
 
 ```yaml
 # overtime.yml
-jobs:
-  - name: my-job        # lowercase, alphanumeric, dashes
+shifts:
+  - name: my-shift      # lowercase, alphanumeric, dashes
     schedule: "every day at 9am"
     task: "What the agent should do"
     notify: slack       # optional — Slack notification on completion
@@ -123,26 +123,26 @@ jobs:
 
 ## Skills
 
-overtime is designed to be extended with Claude Code skills — not by adding features to the core.
+itsovertime is designed to be extended with Claude Code skills — not by adding features to the core.
 
 Want to add something? Ask Claude to do it:
 
 - *"Add Cursor as an agent option"* — Claude modifies `runner.ts`
-- *"Add a `logs` command that shows past job output"* — Claude adds a command to `index.ts`
+- *"Add a `logs` command that shows past shift output"* — Claude adds a command to `index.ts`
 - *"Support Discord webhook notifications"* — Claude adds a notify function
-- *"Add a job that runs on git push instead of a schedule"* — Claude wires up a file watcher
+- *"Add a shift that runs on git push instead of a schedule"* — Claude wires up a file watcher
 
 The codebase is 9 files and ~600 lines. Small enough that Claude (or you) can read the whole thing, understand it, and change it confidently. That's the point — the code *is* the configuration layer.
 
 ## How it works
 
-overtime is a single Node.js process that:
+itsovertime is a single Node.js process that:
 
 1. Reads `overtime.yml` and parses natural language schedules into cron
-2. Runs a cron loop — when a job fires, spawns `claude --print` with the task
-3. Shows job state in a live TUI dashboard
-4. Sends a Slack notification when jobs complete
-5. Prevents overlap — if a job is still running when its next cron fires, it skips
+2. Runs a cron loop — when a shift fires, spawns `claude --print` with the task
+3. Shows shift state in a live TUI dashboard
+4. Sends a Slack notification when shifts complete
+5. Prevents overlap — if a shift is still running when its next cron fires, it skips
 
 That's it. No daemon, no database, no queue. One process, one config file.
 
@@ -153,7 +153,7 @@ That's it. No daemon, no database, no queue. One process, one config file.
 
 ## Design philosophy
 
-- **The agent is the integration layer.** overtime doesn't talk to GitHub, Linear, or Slack. The agent does. overtime just schedules and watches.
+- **The agent is the integration layer.** itsovertime doesn't talk to GitHub, Linear, or Slack. The agent does. itsovertime just schedules and watches.
 - **One process, handful of files.** Small enough to understand completely. Read the whole source in one sitting.
 - **Skills over features.** New capabilities come from Claude Code skills that modify the source — not config options, plugin systems, or abstraction layers.
 - **No magic.** It reads YAML, runs cron, spawns a CLI, and draws a table. You can trace the entire flow in 10 minutes.

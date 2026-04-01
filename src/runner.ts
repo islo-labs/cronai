@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import type { JobConfig, Credentials } from "./config.js";
+import type { ShiftConfig, Credentials } from "./config.js";
 
 export interface JobResult {
   success: boolean;
@@ -11,8 +11,8 @@ export interface JobResult {
   sessionId?: string;
 }
 
-export function runJob(
-  job: JobConfig,
+export function runShift(
+  job: ShiftConfig,
   credentials?: Credentials,
   signal?: AbortSignal
 ): Promise<JobResult> {

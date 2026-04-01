@@ -1,0 +1,9 @@
+tools:
+  node:
+    version: '18.0'
+  npm:
+    version: bundled
+    depends_on:
+    - node
+    setup_tasks:
+    - npm ci

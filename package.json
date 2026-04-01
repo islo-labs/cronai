@@ -1,10 +1,10 @@
 {
-  "name": "overtime",
+  "name": "itsovertime",
   "version": "0.1.0",
   "description": "Cron for AI agents",
   "type": "module",
   "bin": {
-    "overtime": "./dist/index.js"
+    "itsovertime": "./dist/index.js"
   },
   "files": [
     "dist"

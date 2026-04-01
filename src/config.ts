@@ -5,11 +5,11 @@ import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 import { parseToCron } from "./cron.js";
 
-const JobSchema = z.object({
+const ShiftSchema = z.object({
   name: z
     .string()
     .min(1)
-    .regex(/^[a-z0-9-]+$/, "Job name must be lowercase alphanumeric with dashes"),
+    .regex(/^[a-z0-9-]+$/, "Shift name must be lowercase alphanumeric with dashes"),
   schedule: z.string(),
   task: z.string().min(1),
   agent: z.string().default("claude"),
@@ -30,17 +30,17 @@ const ConfigSchema = z
         notify: z.enum(["slack"]).optional(),
       })
       .optional(),
-    jobs: z.array(JobSchema).min(1, "At least one job is required"),
+    shifts: z.array(ShiftSchema).min(1, "At least one shift is required"),
   })
   .refine(
     (config) => {
-      const names = config.jobs.map((j) => j.name);
+      const names = config.shifts.map((s) => s.name);
       return new Set(names).size === names.length;
     },
-    { message: "Job names must be unique" }
+    { message: "Shift names must be unique" }
   );
 
-export type JobConfig = z.infer<typeof JobSchema>;
+export type ShiftConfig = z.infer<typeof ShiftSchema>;
 export type OvertimeConfig = z.infer<typeof ConfigSchema>;
 
 // --- Credentials ---
@@ -53,7 +53,7 @@ export interface Credentials {
 }
 
 export function loadCredentials(): Credentials {
-  const credPath = resolve(homedir(), ".overtime", "credentials.json");
+  const credPath = resolve(homedir(), ".itsovertime", "credentials.json");
   let stored: Record<string, string> = {};
 
   if (existsSync(credPath)) {
@@ -88,7 +88,7 @@ export function loadConfig(configPath?: string): OvertimeConfig & { configPath: 
 
   if (!found) {
     console.error(
-      `No config file found. Run "overtime init" to get started, or create overtime.yml manually.`
+      `No config file found. Run "itsovertime init" to get started, or create overtime.yml manually.`
     );
     process.exit(1);
   }
@@ -109,32 +109,32 @@ export function loadConfig(configPath?: string): OvertimeConfig & { configPath: 
   const config = result.data!;
   const defaults = config.defaults;
 
-  // Merge defaults into jobs
+  // Merge defaults into shifts
   if (defaults) {
-    for (const job of config.jobs) {
-      if (defaults.agent && job.agent === "claude") {
-        job.agent = defaults.agent;
+    for (const shift of config.shifts) {
+      if (defaults.agent && shift.agent === "claude") {
+        shift.agent = defaults.agent;
       }
-      if (defaults.timeout && job.timeout === 300) {
-        job.timeout = defaults.timeout;
+      if (defaults.timeout && shift.timeout === 300) {
+        shift.timeout = defaults.timeout;
       }
-      if (defaults.notify && !job.notify) {
-        job.notify = defaults.notify;
+      if (defaults.notify && !shift.notify) {
+        shift.notify = defaults.notify;
       }
     }
   }
 
   // Convert natural language schedules to cron
-  for (const job of config.jobs) {
-    const cron = parseToCron(job.schedule);
+  for (const shift of config.shifts) {
+    const cron = parseToCron(shift.schedule);
     if (!cron) {
       console.error(
-        `Invalid schedule for job "${job.name}": "${job.schedule}"\n` +
+        `Invalid schedule for shift "${shift.name}": "${shift.schedule}"\n` +
           `  Examples: "every hour", "every day at 9am", "every monday at 2pm"`
       );
       process.exit(1);
     }
-    job.schedule = cron;
+    shift.schedule = cron;
   }
 
   return { ...config, configPath: found };

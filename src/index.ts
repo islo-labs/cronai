@@ -2,11 +2,11 @@ import { spawnSync } from "node:child_process";
 import { program } from "commander";
 import { loadConfig, loadCredentials } from "./config.js";
 import { Scheduler } from "./scheduler.js";
-import { runJob } from "./runner.js";
+import { runShift } from "./runner.js";
 import { notifySlack } from "./notify.js";
 
 program
-  .name("overtime")
+  .name("itsovertime")
   .description("Cron for AI agents")
   .version("0.1.0")
   .option("-c, --config <path>", "Path to config file");
@@ -19,15 +19,15 @@ program
     const opts = cmd.optsWithGlobals();
     const config = loadConfig(opts.config);
     const credentials = loadCredentials();
-    const scheduler = new Scheduler(config.jobs, credentials, config.configPath);
+    const scheduler = new Scheduler(config.shifts, credentials, config.configPath);
 
     const { render } = await import("ink");
     const React = await import("react");
     const { App } = await import("./app.js");
 
-    const onResume = (sessionId: string, jobName: string) => {
+    const onResume = (sessionId: string, shiftName: string) => {
       scheduler.stop().then(() => {
-        console.log(`\nResuming session for "${jobName}"...\n`);
+        console.log(`\nResuming session for "${shiftName}"...\n`);
         spawnSync("claude", ["--resume", sessionId], {
           stdio: "inherit",
           cwd: process.cwd(),
@@ -52,26 +52,26 @@ program
     await waitUntilExit();
   });
 
-// Run a single job immediately
+// Run a single shift immediately
 program
-  .command("run <job>")
-  .description("Run a single job immediately (no TUI)")
-  .action(async (jobName: string, _, cmd) => {
+  .command("run <shift>")
+  .description("Run a single shift immediately (no TUI)")
+  .action(async (shiftName: string, _, cmd) => {
     const opts = cmd.optsWithGlobals();
     const config = loadConfig(opts.config);
     const credentials = loadCredentials();
-    const job = config.jobs.find((j) => j.name === jobName);
+    const shift = config.shifts.find((s) => s.name === shiftName);
 
-    if (!job) {
+    if (!shift) {
       console.error(
-        `Job "${jobName}" not found. Available: ${config.jobs.map((j) => j.name).join(", ")}`
+        `Shift "${shiftName}" not found. Available: ${config.shifts.map((s) => s.name).join(", ")}`
       );
       process.exit(1);
       return;
     }
 
-    console.log(`Running "${jobName}"...`);
-    const result = await runJob(job, credentials);
+    console.log(`Running "${shiftName}"...`);
+    const result = await runShift(shift, credentials);
 
     console.log(result.output);
     if (result.error) console.error(result.error);
@@ -82,8 +82,8 @@ program
       `\n${result.success ? "✓" : "✗"} ${duration}s${cost}`
     );
 
-    if (job.notify === "slack") {
-      await notifySlack(jobName, result, credentials);
+    if (shift.notify === "slack") {
+      await notifySlack(shiftName, result, credentials);
     }
 
     process.exit(result.success ? 0 : 1);
@@ -92,7 +92,7 @@ program
 // Init wizard
 program
   .command("init")
-  .description("Set up overtime: connect services and create config")
+  .description("Set up itsovertime: connect services and create config")
   .action(async () => {
     const { init } = await import("./init.js");
     await init();

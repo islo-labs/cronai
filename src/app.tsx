@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useApp } from "ink";
 import { Scheduler } from "./scheduler.js";
-import type { JobState } from "./scheduler.js";
+import type { ShiftState } from "./scheduler.js";
 import { Dashboard } from "./ui.js";
 
 export function App({
@@ -9,56 +9,40 @@ export function App({
   onResume,
 }: {
   scheduler: Scheduler;
-  onResume: (sessionId: string, jobName: string) => void;
+  onResume: (sessionId: string, shiftName: string) => void;
 }) {
   const { exit } = useApp();
-  const [jobs, setJobs] = useState<JobState[]>(scheduler.getJobs());
+  const [shifts, setShifts] = useState<ShiftState[]>(scheduler.getShifts());
 
   useEffect(() => {
     scheduler.start();
-
     const unsubscribe = scheduler.onStateChange(() => {
-      setJobs([...scheduler.getJobs()]);
+      setShifts([...scheduler.getShifts()]);
     });
-
-    return () => {
-      unsubscribe();
-      scheduler.stop();
-    };
+    return () => { unsubscribe(); scheduler.stop(); };
   }, [scheduler]);
 
-  // Refresh relative times every 30s
   useEffect(() => {
     const timer = setInterval(() => {
-      setJobs([...scheduler.getJobs()]);
+      setShifts([...scheduler.getShifts()]);
     }, 30_000);
     return () => clearInterval(timer);
   }, [scheduler]);
 
-  const handleRunJob = useCallback(
-    (name: string) => {
-      scheduler.runNow(name);
-    },
-    [scheduler]
-  );
+  const handleRun = useCallback((name: string) => {
+    scheduler.runNow(name);
+  }, [scheduler]);
 
-  const handleDeleteJob = useCallback(
-    (name: string) => {
-      scheduler.deleteJob(name);
-    },
-    [scheduler]
-  );
+  const handleDelete = useCallback((name: string) => {
+    scheduler.deleteShift(name);
+  }, [scheduler]);
 
-  const handleResumeJob = useCallback(
-    (name: string) => {
-      const sessionId = scheduler.getSessionId(name);
-      if (!sessionId) return;
-      exit();
-      // Defer to after Ink unmounts
-      setTimeout(() => onResume(sessionId, name), 100);
-    },
-    [scheduler, exit, onResume]
-  );
+  const handleResume = useCallback((name: string) => {
+    const sessionId = scheduler.getSessionId(name);
+    if (!sessionId) return;
+    exit();
+    setTimeout(() => onResume(sessionId, name), 100);
+  }, [scheduler, exit, onResume]);
 
   const handleQuit = useCallback(() => {
     scheduler.stop();
@@ -66,10 +50,10 @@ export function App({
 
   return (
     <Dashboard
-      jobs={jobs}
-      onRunJob={handleRunJob}
-      onDeleteJob={handleDeleteJob}
-      onResumeJob={handleResumeJob}
+      shifts={shifts}
+      onRun={handleRun}
+      onDelete={handleDelete}
+      onResume={handleResume}
       onQuit={handleQuit}
     />
   );
