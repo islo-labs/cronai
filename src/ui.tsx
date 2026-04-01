@@ -31,9 +31,24 @@ function statusLabel(status: JobStatus): string {
   }
 }
 
+function formatLastRun(date?: Date): string {
+  if (!date) return "-";
+  const now = Date.now();
+  const diff = now - date.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days}d ago`;
+  if (hours > 0) return `${hours}h ago`;
+  if (minutes > 0) return `${minutes}m ago`;
+  return "just now";
+}
+
 // --- Column widths ---
 
-const COL = { name: 18, schedule: 16, status: 12, next: 14 };
+const COL = { name: 18, schedule: 18, status: 12, lastRun: 12, next: 14 };
 
 // --- Components ---
 
@@ -44,6 +59,7 @@ function Header() {
         <Text>{pad("JOB", COL.name)}</Text>
         <Text>{pad("SCHEDULE", COL.schedule)}</Text>
         <Text>{pad("STATUS", COL.status)}</Text>
+        <Text>{pad("LAST RUN", COL.lastRun)}</Text>
         <Text>{"NEXT RUN"}</Text>
       </Text>
     </Box>
@@ -67,6 +83,7 @@ function JobRow({
         <Text bold={selected}>{pad(job.config.name, COL.name)}</Text>
         <Text dimColor>{pad(describeCron(job.config.schedule), COL.schedule)}</Text>
         <Text color={color}>{pad(statusLabel(job.status), COL.status)}</Text>
+        <Text dimColor>{pad(formatLastRun(job.lastRun), COL.lastRun)}</Text>
         <Text>{formatRelativeTime(job.nextRun)}</Text>
       </Text>
     </Box>
@@ -95,7 +112,7 @@ function StatusBar({ mode }: { mode: "table" | "output" }) {
 
 function OutputView({ job }: { job: JobState }) {
   const output =
-    job.lastResult?.output || job.lastResult?.error || "No output yet";
+    job.lastResult?.output || job.lastResult?.error || "No output yet — run the job first or check ~/.overtime/logs/";
 
   return (
     <Box flexDirection="column" padding={1}>
@@ -104,9 +121,12 @@ function OutputView({ job }: { job: JobState }) {
           {job.config.name}
           <Text dimColor>
             {" "}
-            — {job.lastResult?.success ? "✓ success" : "✗ failed"}
+            — {job.lastResult?.success ? "✓ success" : job.lastResult ? "✗ failed" : "no runs yet"}
             {job.lastResult
               ? ` (${(job.lastResult.durationMs / 1000).toFixed(1)}s)`
+              : ""}
+            {job.lastResult?.cost
+              ? ` $${job.lastResult.cost.toFixed(4)}`
               : ""}
           </Text>
         </Text>

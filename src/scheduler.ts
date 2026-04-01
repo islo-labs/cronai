@@ -1,3 +1,6 @@
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { homedir } from "node:os";
 import cron from "node-cron";
 import type { JobConfig, Credentials } from "./config.js";
 import { runJob, type JobResult } from "./runner.js";
@@ -14,20 +17,73 @@ export interface JobState {
   nextRun: Date;
 }
 
+// --- Persistent history ---
+
+const OVERTIME_DIR = resolve(homedir(), ".overtime");
+const HISTORY_FILE = resolve(OVERTIME_DIR, "history.json");
+const LOGS_DIR = resolve(OVERTIME_DIR, "logs");
+
+interface HistoryEntry {
+  status: "done" | "error";
+  lastRun: string;
+  durationMs: number;
+  success: boolean;
+  cost?: number;
+}
+
+function loadHistory(): Record<string, HistoryEntry> {
+  if (!existsSync(HISTORY_FILE)) return {};
+  try {
+    return JSON.parse(readFileSync(HISTORY_FILE, "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+function saveHistory(history: Record<string, HistoryEntry>) {
+  mkdirSync(OVERTIME_DIR, { recursive: true });
+  writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2) + "\n");
+}
+
+function saveJobLog(name: string, result: JobResult) {
+  mkdirSync(LOGS_DIR, { recursive: true });
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const logFile = resolve(LOGS_DIR, `${name}-${timestamp}.log`);
+  const header = [
+    `Job: ${name}`,
+    `Status: ${result.success ? "success" : "failed"}`,
+    `Duration: ${(result.durationMs / 1000).toFixed(1)}s`,
+    result.cost ? `Cost: $${result.cost.toFixed(4)}` : null,
+    `Exit code: ${result.exitCode}`,
+    `---`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  writeFileSync(logFile, header + "\n" + result.output + (result.error ? "\n\nSTDERR:\n" + result.error : "") + "\n");
+}
+
+// --- Scheduler ---
+
 export class Scheduler {
   private jobs = new Map<string, JobState>();
   private tasks = new Map<string, cron.ScheduledTask>();
   private abortControllers = new Map<string, AbortController>();
   private listeners: Array<() => void> = [];
+  private history: Record<string, HistoryEntry>;
 
   constructor(
     private configs: JobConfig[],
     private credentials: Credentials = {}
   ) {
+    this.history = loadHistory();
+
     for (const config of configs) {
+      const past = this.history[config.name];
       this.jobs.set(config.name, {
         config,
-        status: "idle",
+        status: past?.status ?? "idle",
+        lastRun: past?.lastRun ? new Date(past.lastRun) : undefined,
         nextRun: nextRun(config.schedule),
       });
     }
@@ -58,18 +114,15 @@ export class Scheduler {
   }
 
   async stop(): Promise<void> {
-    // Stop all cron tasks
     for (const task of this.tasks.values()) {
       task.stop();
     }
     this.tasks.clear();
 
-    // Abort running jobs
     for (const controller of this.abortControllers.values()) {
       controller.abort();
     }
 
-    // Wait for running jobs to finish (up to 30s)
     const deadline = Date.now() + 30_000;
     while (this.abortControllers.size > 0 && Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 200));
@@ -84,7 +137,6 @@ export class Scheduler {
     const state = this.jobs.get(name);
     if (!state) return;
 
-    // Overlap prevention
     if (state.status === "running") return;
 
     const controller = new AbortController();
@@ -101,12 +153,23 @@ export class Scheduler {
       state.lastRun = new Date();
       state.nextRun = nextRun(state.config.schedule);
 
-      // Fire-and-forget notification
+      // Persist to disk
+      this.history[name] = {
+        status: state.status,
+        lastRun: state.lastRun.toISOString(),
+        durationMs: result.durationMs,
+        success: result.success,
+        cost: result.cost,
+      };
+      saveHistory(this.history);
+      saveJobLog(name, result);
+
       if (state.config.notify === "slack") {
         notifySlack(name, result, this.credentials).catch(() => {});
       }
     } catch (err) {
       state.status = "error";
+      state.lastRun = new Date();
       state.lastResult = {
         success: false,
         output: "",
@@ -114,6 +177,14 @@ export class Scheduler {
         durationMs: 0,
         exitCode: null,
       };
+
+      this.history[name] = {
+        status: "error",
+        lastRun: state.lastRun.toISOString(),
+        durationMs: 0,
+        success: false,
+      };
+      saveHistory(this.history);
     } finally {
       this.abortControllers.delete(name);
       this.notify();
