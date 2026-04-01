@@ -30,7 +30,21 @@ export function runJob(
     if (credentials?.linearApiKey) credEnv.LINEAR_API_KEY = credentials.linearApiKey;
     if (credentials?.anthropicApiKey) credEnv.ANTHROPIC_API_KEY = credentials.anthropicApiKey;
 
-    const child = spawn("claude", args, {
+    // Block outbound internet by unsetting proxy vars and setting no_proxy=*
+    if (job.blockInternet) {
+      credEnv.HTTP_PROXY = "";
+      credEnv.HTTPS_PROXY = "";
+      credEnv.http_proxy = "";
+      credEnv.https_proxy = "";
+      credEnv.NO_PROXY = "*";
+      credEnv.no_proxy = "*";
+    }
+
+    // When blockInternet is set, run inside a network-isolated namespace
+    const cmd = job.blockInternet ? "unshare" : "claude";
+    const cmdArgs = job.blockInternet ? ["--net", "--map-root-user", "claude", ...args] : args;
+
+    const child = spawn(cmd, cmdArgs, {
       cwd: job.workdir ?? process.cwd(),
       env: { ...process.env, ...credEnv, ...job.env },
       stdio: ["ignore", "pipe", "pipe"],

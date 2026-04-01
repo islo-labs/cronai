@@ -19,6 +19,7 @@ const JobSchema = z.object({
   timeout: z.number().positive().default(300),
   workdir: z.string().optional(),
   env: z.record(z.string(), z.string()).optional(),
+  blockInternet: z.boolean().optional(),
 });
 
 const ConfigSchema = z
