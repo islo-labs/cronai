@@ -1,11 +1,11 @@
-# overtime
+# overtime (otai)
 
 Cron for AI agents. Schedule agent tasks like you schedule cron jobs.
 
 ## Automated PR reviews in 30 seconds
 
 ```bash
-npx otai init
+npx @islo-labs/otai init
 ```
 
 ```yaml
@@ -21,23 +21,12 @@ shifts:
 ```
 
 ```bash
-npx otai
+npx @islo-labs/otai
 ```
 
 That's it. Every hour, Claude reviews your open PRs and leaves comments on GitHub. You get a Slack notification when it's done.
 
-## Install
-
-```bash
-# Use directly with npx
-npx otai
-
-# Or install globally for the full `overtime` command
-npm i -g otai
-overtime
-```
-
-Both `npx otai` and `overtime` (after global install) work identically.
+> **Why otai?** The npm name `overtime` was taken. Install globally with `npm i -g @islo-labs/otai` to get the `overtime` command.
 
 ## More examples
 
@@ -88,10 +77,18 @@ The scheduler runs in the background — close the TUI and your shifts keep runn
 ## Getting started
 
 ```bash
-overtime init           # connect GitHub, Linear, Slack — creates overtime.yml
-overtime                # start dashboard (auto-starts background scheduler)
-overtime run pr-review  # test a single shift
-overtime stop           # stop the background scheduler
+# With npx
+npx @islo-labs/otai init        # connect GitHub, Linear, Slack — creates overtime.yml
+npx @islo-labs/otai              # start dashboard
+npx @islo-labs/otai run pr-review
+npx @islo-labs/otai stop
+
+# Or install globally for the `overtime` command
+npm i -g @islo-labs/otai
+overtime init
+overtime
+overtime run pr-review
+overtime stop
 ```
 
 ## Live output
