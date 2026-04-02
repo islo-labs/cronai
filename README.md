@@ -1,16 +1,16 @@
-# overtime
+# cronai
 
 Cron for AI agents. Schedule agent tasks like you schedule cron jobs.
 
 ## Automated PR reviews in 30 seconds
 
 ```bash
-npx @islo-labs/overtime init
+npx cronai init
 ```
 
 ```yaml
-# overtime.yml
-shifts:
+# cronai.yml
+crons:
   - name: pr-review
     schedule: "every hour"
     task: >
@@ -21,7 +21,7 @@ shifts:
 ```
 
 ```bash
-npx @islo-labs/overtime
+npx cronai
 ```
 
 That's it. Every hour, Claude reviews your open PRs and leaves comments on GitHub. You get a Slack notification when it's done.
@@ -29,7 +29,7 @@ That's it. Every hour, Claude reviews your open PRs and leaves comments on GitHu
 ## More examples
 
 ```yaml
-shifts:
+crons:
   - name: pr-review
     schedule: "every hour"
     task: "Review all open PRs — check for bugs, security issues, and style. Leave comments on GitHub."
@@ -56,70 +56,60 @@ shifts:
 ## Dashboard
 
 ```
-$ overtime
+$ cronai
 
-┌─ overtime ────────────────────────────────────────────────────┐
+┌─ cronai ──────────────────────────────────────────────────────┐
 │                                                               │
-│  SHIFT          SCHEDULE        STATUS    LAST RUN   NEXT RUN │
-│  pr-review      every hour      idle      3h ago     in 22m   │
-│  dep-updates    Mon at 2am     ✓ done    1d ago     in 4d 11h│
-│  bug-triage     every 4 hours   ⟳ running -          in 1h 05m│
+│  CRON            SCHEDULE        STATUS    LAST RUN   NEXT RUN│
+│  pr-review       every hour      idle      3h ago     in 22m  │
+│  dep-updates     Mon at 2am     ✓ done    1d ago     in 4d   │
+│  bug-triage      every 4 hours   ⟳ running -          in 1h   │
 │                                                               │
 │  [↑↓] select  [r] run  [s] resume session  [d] delete        │
 │  [enter] output  [q] quit                                     │
 └───────────────────────────────────────────────────────────────┘
 ```
 
-The scheduler runs in the background — close the TUI and your shifts keep running. Reopen it anytime to check status.
+The scheduler runs in the background — close the TUI and your crons keep running. Reopen it anytime to check status.
 
 ## Getting started
 
 ```bash
-# Install globally (recommended)
-npm i -g @islo-labs/overtime
-
-overtime init           # connect GitHub, Linear, Slack — creates overtime.yml
-overtime                # start dashboard (auto-starts background scheduler)
-overtime run pr-review  # test a single shift
-overtime stop           # stop the background scheduler
-```
-
-Or use directly with npx:
-
-```bash
-npx @islo-labs/overtime init
-npx @islo-labs/overtime
+cronai init           # connect GitHub, Linear, Slack — creates cronai.yml
+cronai                # start dashboard (auto-starts background scheduler)
+cronai run pr-review  # test a single cron
+cronai stop           # stop the background scheduler
 ```
 
 ## Live output
 
-Press `enter` on any shift to see its output. While a shift is running, output streams in real-time — watch Claude think, read files, and run commands as it happens.
+Press `enter` on any cron to see its output. While a cron is running, output streams in real-time — watch Claude think, read files, and run commands as it happens.
 
 ## Resume sessions
 
-Press `s` on any shift — running or completed — to drop into the Claude session interactively. This lets you inspect what the agent did, ask follow-up questions, or continue the work.
+Press `s` on any cron — running or completed — to drop into the Claude session interactively. This lets you inspect what the agent did, ask follow-up questions, or continue the work.
 
 The agent ran overnight and opened a PR but you want to tweak it? Press `s` and you're in the same conversation with full context.
 
 ## How is this different from `/loop`?
 
-Claude Code has a built-in `/loop` command that runs a prompt on an interval. overtime is for shifts you define once and run forever.
+Claude Code has a built-in `/loop` command that runs a prompt on an interval. cronai is for crons you define once and run forever.
 
-- **Runs in the background.** `/loop` dies when you close the terminal. overtime keeps running.
-- **Multiple shifts.** `/loop` runs one thing. overtime manages many shifts with different schedules.
+- **Runs in the background.** `/loop` dies when you close the terminal. cronai keeps running.
+- **Multiple crons.** `/loop` runs one thing. cronai manages many crons with different schedules.
 - **Real cron schedules.** Not just "every 5 minutes" — "every monday at 2am", "every weekday at 9am".
-- **Dashboard.** See all your shifts, their status, last run time, and output in one place.
-- **Session resume.** Press `s` to jump back into any completed shift and keep working.
+- **Dashboard.** See all your crons, their status, last run time, and output in one place.
+- **Session resume.** Press `s` to jump back into any completed session and keep working.
 - **Persistent history.** Logs survive restarts. See what happened last night.
-- **Config as code.** `overtime.yml` lives in your repo. Commit it, share it with the team.
+- **Config as code.** `cronai.yml` lives in your repo. Commit it, share it with the team.
 
-Think of `/loop` as a personal timer. overtime is infrastructure.
+Think of `/loop` as a personal timer. cronai is infrastructure.
 
 ## Why it's small
 
-overtime does exactly one thing: run Claude on a schedule and show you what happened.
+cronai does exactly one thing: run Claude on a schedule and show you what happened.
 
-It doesn't have GitHub integrations, Linear clients, or Slack SDKs. It doesn't need them. The agent already knows how to use `gh`, call APIs, and post to Slack. You just tell it what to do in plain English. overtime is just the clock.
+It doesn't have GitHub integrations, Linear clients, or Slack SDKs. It doesn't need them. The agent already knows how to use `gh`, call APIs, and post to Slack. You just tell it what to do in plain English. cronai is just the clock.
 
 ## Schedules
 
@@ -141,9 +131,9 @@ Standard cron expressions (`0 9 * * *`) also work if you prefer them.
 ## Config
 
 ```yaml
-# overtime.yml
-shifts:
-  - name: my-shift      # lowercase, alphanumeric, dashes
+# cronai.yml
+crons:
+  - name: my-cron       # lowercase, alphanumeric, dashes
     schedule: "every day at 9am"
     task: "What the agent should do"
     notify: slack       # optional — Slack notification on completion
@@ -154,13 +144,13 @@ shifts:
 
 ## How it works
 
-overtime runs a background scheduler that fires shifts on their cron schedules. The TUI is just a viewer — open and close it anytime.
+cronai runs a background scheduler that fires crons on their schedules. The TUI is just a viewer — open and close it anytime.
 
-1. `overtime` starts the scheduler as a background daemon (if not already running) and opens the TUI
-2. When a shift fires, it spawns `claude --print` with streaming output
+1. `cronai` starts the scheduler as a background daemon (if not already running) and opens the TUI
+2. When a cron fires, it spawns `claude --print` with streaming output
 3. The TUI connects via Unix socket for real-time state updates
-4. Shift history and logs persist to `~/.overtime/` across restarts
-5. Overlap prevention — if a shift is still running when its next cron fires, it skips
+4. History and logs persist to `~/.cronai/` across restarts
+5. Overlap prevention — if a cron is still running when its next schedule fires, it skips
 
 ## Requirements
 
@@ -169,7 +159,7 @@ overtime runs a background scheduler that fires shifts on their cron schedules. 
 
 ## Design philosophy
 
-- **The agent is the integration layer.** overtime doesn't talk to GitHub, Linear, or Slack. The agent does. overtime just schedules and watches.
+- **The agent is the integration layer.** cronai doesn't talk to GitHub, Linear, or Slack. The agent does. cronai just schedules and watches.
 - **One process, handful of files.** Small enough to understand completely. Read the whole source in one sitting.
 - **Small by design.** New capabilities come from modifying the source — not config options, plugin systems, or abstraction layers.
 - **No magic.** It reads YAML, runs cron, spawns a CLI, and draws a table. You can trace the entire flow in 10 minutes.

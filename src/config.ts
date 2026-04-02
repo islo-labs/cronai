@@ -5,11 +5,11 @@ import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 import { parseToCron } from "./cron.js";
 
-const ShiftSchema = z.object({
+const CronSchema = z.object({
   name: z
     .string()
     .min(1)
-    .regex(/^[a-z0-9-]+$/, "Shift name must be lowercase alphanumeric with dashes"),
+    .regex(/^[a-z0-9-]+$/, "Cron name must be lowercase alphanumeric with dashes"),
   schedule: z.string(),
   task: z.string().min(1),
   agent: z.string().default("claude"),
@@ -30,18 +30,18 @@ const ConfigSchema = z
         notify: z.enum(["slack"]).optional(),
       })
       .optional(),
-    shifts: z.array(ShiftSchema).min(1, "At least one shift is required"),
+    crons: z.array(CronSchema).min(1, "At least one cron is required"),
   })
   .refine(
     (config) => {
-      const names = config.shifts.map((s) => s.name);
+      const names = config.crons.map((s) => s.name);
       return new Set(names).size === names.length;
     },
-    { message: "Shift names must be unique" }
+    { message: "Cron names must be unique" }
   );
 
-export type ShiftConfig = z.infer<typeof ShiftSchema>;
-export type OvertimeConfig = z.infer<typeof ConfigSchema>;
+export type CronConfig = z.infer<typeof CronSchema>;
+export type CronaiConfig = z.infer<typeof ConfigSchema>;
 
 // --- Credentials ---
 
@@ -53,7 +53,7 @@ export interface Credentials {
 }
 
 export function loadCredentials(): Credentials {
-  const credPath = resolve(homedir(), ".overtime", "credentials.json");
+  const credPath = resolve(homedir(), ".cronai", "credentials.json");
   let stored: Record<string, string> = {};
 
   if (existsSync(credPath)) {
@@ -79,16 +79,16 @@ function resolveEnvVars(text: string): string {
   return text.replace(/\$\{(\w+)\}/g, (_, name) => process.env[name] ?? "");
 }
 
-export function loadConfig(configPath?: string): OvertimeConfig & { configPath: string } {
+export function loadConfig(configPath?: string): CronaiConfig & { configPath: string } {
   const candidates = configPath
     ? [configPath]
-    : ["overtime.yml", "overtime.yaml", ".overtime.yml"];
+    : ["cronai.yml", "cronai.yaml", ".cronai.yml"];
 
   const found = candidates.map((c) => resolve(c)).find((c) => existsSync(c));
 
   if (!found) {
     console.error(
-      `No config file found. Run "overtime init" to get started, or create overtime.yml manually.`
+      `No config file found. Run "cronai init" to get started, or create cronai.yml manually.`
     );
     process.exit(1);
   }
@@ -109,32 +109,32 @@ export function loadConfig(configPath?: string): OvertimeConfig & { configPath: 
   const config = result.data!;
   const defaults = config.defaults;
 
-  // Merge defaults into shifts
+  // Merge defaults into crons
   if (defaults) {
-    for (const shift of config.shifts) {
-      if (defaults.agent && shift.agent === "claude") {
-        shift.agent = defaults.agent;
+    for (const cron of config.crons) {
+      if (defaults.agent && cron.agent === "claude") {
+        cron.agent = defaults.agent;
       }
-      if (defaults.timeout && shift.timeout === 3600) {
-        shift.timeout = defaults.timeout;
+      if (defaults.timeout && cron.timeout === 3600) {
+        cron.timeout = defaults.timeout;
       }
-      if (defaults.notify && !shift.notify) {
-        shift.notify = defaults.notify;
+      if (defaults.notify && !cron.notify) {
+        cron.notify = defaults.notify;
       }
     }
   }
 
   // Convert natural language schedules to cron
-  for (const shift of config.shifts) {
-    const cron = parseToCron(shift.schedule);
-    if (!cron) {
+  for (const cron of config.crons) {
+    const cronExpr = parseToCron(cron.schedule);
+    if (!cronExpr) {
       console.error(
-        `Invalid schedule for shift "${shift.name}": "${shift.schedule}"\n` +
+        `Invalid schedule for cron "${cron.name}": "${cron.schedule}"\n` +
           `  Examples: "every hour", "every day at 9am", "every monday at 2pm"`
       );
       process.exit(1);
     }
-    shift.schedule = cron;
+    cron.schedule = cronExpr;
   }
 
   return { ...config, configPath: found };

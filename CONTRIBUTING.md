@@ -1,30 +1,29 @@
-# Contributing to overtime
+# Contributing to cronai
 
-overtime is intentionally small. The goal is a codebase you can read in one sitting. Contributions should keep it that way.
+cronai is intentionally small. The goal is a codebase you can read in one sitting. Contributions should keep it that way.
 
 ## Philosophy
 
-**The agent is the integration layer.** overtime doesn't need a GitHub client, Linear SDK, or Slack library. The agent already knows how to use those. overtime just schedules and watches. If you're about to add an integration, ask yourself: can the agent just do this as part of its task?
+**The agent is the integration layer.** cronai doesn't need a GitHub client, Linear SDK, or Slack library. The agent already knows how to use those. cronai just schedules and watches. If you're about to add an integration, ask yourself: can the agent just do this as part of its task?
 
 **Small changes over big features.** A 10-line change to `runner.ts` that adds Cursor support is better than a 200-line plugin system. Keep it simple.
 
 **No abstraction without repetition.** Don't add interfaces, registries, or factories for things that exist once. Three similar lines are better than a premature abstraction.
 
-**The whole thing is 9 files.** Try to keep it that way. If a change needs a new file, it should be worth the added complexity.
-
 ## Project structure
 
 ```
 src/
-  index.ts          # CLI entry — commander setup, routes to start/run/init
-  app.tsx            # Root Ink component — wires scheduler to TUI
+  index.ts          # CLI entry — commander setup, routes to start/run/init/stop
+  app.tsx            # Root Ink component — connects to daemon via socket
   config.ts          # Zod schema, YAML loader, credential management
-  scheduler.ts       # node-cron wrapper, job state, overlap prevention
-  runner.ts          # Spawns claude --print, collects result
+  scheduler.ts       # node-cron wrapper, cron state, overlap prevention
+  runner.ts          # Spawns claude --print with streaming output
   notify.ts          # Slack webhook notification
-  ui.tsx             # TUI components — dashboard, job table, output view
+  ui.tsx             # TUI components — dashboard, cron table, output view
   cron.ts            # Natural language → cron parser, time formatting
   init.ts            # Interactive setup wizard
+  daemon.ts          # Background scheduler daemon, Unix socket server
 ```
 
 ## Development
@@ -42,7 +41,7 @@ npm run build        # build for distribution
 2. Make your change
 3. `npx tsc --noEmit` to type-check
 4. `npm run build` to verify
-5. Test with a real `overtime.yml`
+5. Test with a real `cronai.yml`
 6. PR with a clear description of what and why
 
 ## Good contributions

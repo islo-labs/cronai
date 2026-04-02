@@ -1,0 +1,17 @@
+# cronai.yml — Cron for AI agents
+# Run "cronai init" to set up credentials, or set env vars directly.
+
+crons:
+  - name: pr-review
+    schedule: "every day at 9am"
+    task: "Review open PRs in this repo and leave comments"
+    notify: slack
+
+  - name: dep-updates
+    schedule: "every monday at 2am"
+    task: "Update dependencies, run tests, open PR if passing"
+
+  - name: bug-triage
+    schedule: "every 4 hours"
+    task: "Check Linear for bugs labeled 'needs-triage', add priority labels"
+    notify: slack

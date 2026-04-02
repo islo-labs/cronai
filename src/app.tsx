@@ -3,15 +3,15 @@ import { useApp } from "ink";
 import { createConnection, type Socket } from "node:net";
 import { resolve } from "node:path";
 import { homedir } from "node:os";
-import type { ShiftStatus } from "./scheduler.js";
+import type { CronStatus } from "./scheduler.js";
 import { Dashboard } from "./ui.js";
 
-const SOCK = resolve(homedir(), ".overtime", "overtime.sock");
+const SOCK = resolve(homedir(), ".cronai", "cronai.sock");
 
-interface DaemonShift {
+interface DaemonCron {
   name: string;
   schedule: string;
-  status: ShiftStatus;
+  status: CronStatus;
   lastRun: string | null;
   nextRun: string;
   output: string;
@@ -23,7 +23,7 @@ interface DaemonShift {
 }
 
 // Convert daemon state to the shape the TUI expects
-function toShiftState(s: DaemonShift) {
+function toCronState(s: DaemonCron) {
   return {
     config: { name: s.name, schedule: s.schedule } as any,
     status: s.status,
@@ -44,7 +44,7 @@ function toShiftState(s: DaemonShift) {
 export function App({ onResume }: { onResume: (sessionId: string, name: string) => void }) {
   const { exit } = useApp();
   const socketRef = useRef<Socket | null>(null);
-  const [shifts, setShifts] = useState<ReturnType<typeof toShiftState>[]>([]);
+  const [crons, setCrons] = useState<ReturnType<typeof toCronState>[]>([]);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export function App({ onResume }: { onResume: (sessionId: string, name: string) 
         try {
           const msg = JSON.parse(line);
           if (msg.type === "state") {
-            setShifts(msg.shifts.map(toShiftState));
+            setCrons(msg.crons.map(toCronState));
           }
         } catch {}
       }
@@ -83,13 +83,13 @@ export function App({ onResume }: { onResume: (sessionId: string, name: string) 
   const handleDelete = useCallback((name: string) => send({ cmd: "delete", name }), [send]);
 
   const handleResume = useCallback((name: string) => {
-    const shift = shifts.find((s) => s.config.name === name);
-    const sessionId = shift?.lastResult?.sessionId;
+    const cron = crons.find((s) => s.config.name === name);
+    const sessionId = cron?.lastResult?.sessionId;
     if (!sessionId) return;
     socketRef.current?.destroy();
     exit();
     setTimeout(() => onResume(sessionId, name), 100);
-  }, [shifts, exit, onResume]);
+  }, [crons, exit, onResume]);
 
   const handleQuit = useCallback(() => {
     socketRef.current?.destroy();
@@ -99,7 +99,7 @@ export function App({ onResume }: { onResume: (sessionId: string, name: string) 
 
   return (
     <Dashboard
-      shifts={shifts}
+      crons={crons}
       onRun={handleRun}
       onDelete={handleDelete}
       onResume={handleResume}

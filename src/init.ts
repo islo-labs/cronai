@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 
-const CRED_DIR = resolve(homedir(), ".overtime");
+const CRED_DIR = resolve(homedir(), ".cronai");
 const CRED_FILE = resolve(CRED_DIR, "credentials.json");
 
 async function ask(rl: ReturnType<typeof createInterface>, question: string): Promise<string> {
@@ -14,13 +14,13 @@ async function ask(rl: ReturnType<typeof createInterface>, question: string): Pr
 export async function init() {
   const rl = createInterface({ input: stdin, output: stdout });
 
-  console.log("\n  overtime — cron for AI agents\n");
+  console.log("\n  cronai — cron for AI agents\n");
   console.log("  Let's get you set up.\n");
 
   const creds: Record<string, string> = {};
 
-  // Slack — the only integration overtime itself uses
-  console.log("  1. Slack notifications (get notified when shifts finish)");
+  // Slack — the only integration cronai itself uses
+  console.log("  1. Slack notifications (get notified when crons finish)");
   console.log("     Create a webhook at: https://api.slack.com/messaging/webhooks\n");
   const slackUrl = await ask(rl, "  Slack webhook URL (enter to skip): ");
   if (slackUrl) creds.slackWebhookUrl = slackUrl;
@@ -48,13 +48,13 @@ export async function init() {
     console.log(`  ✓ Credentials saved to ${CRED_FILE}\n`);
   }
 
-  const configPath = resolve("overtime.yml");
+  const configPath = resolve("cronai.yml");
   if (existsSync(configPath)) {
-    console.log(`  overtime.yml already exists, skipping.\n`);
+    console.log(`  cronai.yml already exists, skipping.\n`);
   } else {
-    console.log("  3. Let's create your first shift.\n");
+    console.log("  3. Let's create your first cron.\n");
 
-    const name = (await ask(rl, "  Shift name (e.g. pr-review): ")) || "pr-review";
+    const name = (await ask(rl, "  Cron name (e.g. pr-review): ")) || "pr-review";
     const schedule =
       (await ask(rl, "  How often? (e.g. every day at 9am): ")) ||
       "every day at 9am";
@@ -64,19 +64,19 @@ export async function init() {
 
     const notify = slackUrl ? "\n    notify: slack" : "";
 
-    const yml = `shifts:
+    const yml = `crons:
   - name: ${name}
     schedule: "${schedule}"
     task: "${task}"${notify}
 `;
 
     writeFileSync(configPath, yml);
-    console.log(`\n  ✓ Created overtime.yml\n`);
+    console.log(`\n  ✓ Created cronai.yml\n`);
   }
 
   console.log("  You're all set! Run:\n");
-  console.log("    overtime              # start the dashboard");
-  console.log("    overtime run pr-review # test a shift now\n");
+  console.log("    cronai              # start the dashboard");
+  console.log("    cronai run pr-review # test a cron now\n");
 
   rl.close();
 }

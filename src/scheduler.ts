@@ -3,16 +3,16 @@ import { resolve } from "node:path";
 import { homedir } from "node:os";
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import cron from "node-cron";
-import type { ShiftConfig, Credentials } from "./config.js";
-import { runShift, type JobResult } from "./runner.js";
+import type { CronConfig, Credentials } from "./config.js";
+import { runCron, type JobResult } from "./runner.js";
 import { notifySlack } from "./notify.js";
 import { nextRun } from "./cron.js";
 
-export type ShiftStatus = "idle" | "running" | "done" | "error";
+export type CronStatus = "idle" | "running" | "done" | "error";
 
-export interface ShiftState {
-  config: ShiftConfig;
-  status: ShiftStatus;
+export interface CronState {
+  config: CronConfig;
+  status: CronStatus;
   lastResult?: JobResult;
   lastRun?: Date;
   nextRun: Date;
@@ -20,9 +20,9 @@ export interface ShiftState {
 
 // --- Persistent history ---
 
-const OVERTIME_DIR = resolve(homedir(), ".overtime");
-const HISTORY_FILE = resolve(OVERTIME_DIR, "history.json");
-const LOGS_DIR = resolve(OVERTIME_DIR, "logs");
+const CRONAI_DIR = resolve(homedir(), ".cronai");
+const HISTORY_FILE = resolve(CRONAI_DIR, "history.json");
+const LOGS_DIR = resolve(CRONAI_DIR, "logs");
 
 interface HistoryEntry {
   status: "done" | "error";
@@ -43,16 +43,16 @@ function loadHistory(): Record<string, HistoryEntry> {
 }
 
 function saveHistory(history: Record<string, HistoryEntry>) {
-  mkdirSync(OVERTIME_DIR, { recursive: true });
+  mkdirSync(CRONAI_DIR, { recursive: true });
   writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2) + "\n");
 }
 
-function saveShiftLog(name: string, result: JobResult) {
+function saveCronLog(name: string, result: JobResult) {
   mkdirSync(LOGS_DIR, { recursive: true });
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
   const logFile = resolve(LOGS_DIR, `${name}-${timestamp}.log`);
   const header = [
-    `Shift: ${name}`,
+    `Cron: ${name}`,
     `Status: ${result.success ? "success" : "failed"}`,
     `Duration: ${(result.durationMs / 1000).toFixed(1)}s`,
     result.cost ? `Cost: $${result.cost.toFixed(4)}` : null,
@@ -102,14 +102,14 @@ function loadLatestLog(name: string): JobResult | undefined {
 // --- Scheduler ---
 
 export class Scheduler {
-  private shifts = new Map<string, ShiftState>();
+  private crons = new Map<string, CronState>();
   private tasks = new Map<string, cron.ScheduledTask>();
   private abortControllers = new Map<string, AbortController>();
   private listeners: Array<() => void> = [];
   private history: Record<string, HistoryEntry>;
 
   constructor(
-    private configs: ShiftConfig[],
+    private configs: CronConfig[],
     private credentials: Credentials = {},
     private configPath?: string
   ) {
@@ -117,7 +117,7 @@ export class Scheduler {
 
     for (const config of configs) {
       const past = this.history[config.name];
-      this.shifts.set(config.name, {
+      this.crons.set(config.name, {
         config,
         status: past?.status ?? "idle",
         lastResult: loadLatestLog(config.name),
@@ -127,8 +127,8 @@ export class Scheduler {
     }
   }
 
-  getShifts(): ShiftState[] {
-    return Array.from(this.shifts.values());
+  getCrons(): CronState[] {
+    return Array.from(this.crons.values());
   }
 
   onStateChange(cb: () => void): () => void {
@@ -145,7 +145,7 @@ export class Scheduler {
   start() {
     for (const config of this.configs) {
       const task = cron.schedule(config.schedule, () => {
-        this.executeShift(config.name);
+        this.executeCron(config.name);
       });
       this.tasks.set(config.name, task);
     }
@@ -168,16 +168,16 @@ export class Scheduler {
   }
 
   async runNow(name: string): Promise<void> {
-    await this.executeShift(name);
+    await this.executeCron(name);
   }
 
   getSessionId(name: string): string | undefined {
-    const state = this.shifts.get(name);
+    const state = this.crons.get(name);
     return state?.lastResult?.sessionId ?? this.history[name]?.sessionId;
   }
 
-  deleteShift(name: string): boolean {
-    const state = this.shifts.get(name);
+  deleteCron(name: string): boolean {
+    const state = this.crons.get(name);
     if (!state || state.status === "running") return false;
 
     const task = this.tasks.get(name);
@@ -186,7 +186,7 @@ export class Scheduler {
       this.tasks.delete(name);
     }
 
-    this.shifts.delete(name);
+    this.crons.delete(name);
     this.configs = this.configs.filter((c) => c.name !== name);
 
     delete this.history[name];
@@ -196,12 +196,12 @@ export class Scheduler {
       try {
         const raw = readFileSync(this.configPath, "utf-8");
         const doc = parseYaml(raw);
-        if (doc?.shifts) {
-          doc.shifts = doc.shifts.filter((s: { name: string }) => s.name !== name);
+        if (doc?.crons) {
+          doc.crons = doc.crons.filter((s: { name: string }) => s.name !== name);
           writeFileSync(this.configPath, stringifyYaml(doc));
         }
       } catch {
-        // Config update failed — shift is still removed from runtime
+        // Config update failed — cron is still removed from runtime
       }
     }
 
@@ -209,8 +209,8 @@ export class Scheduler {
     return true;
   }
 
-  private async executeShift(name: string): Promise<void> {
-    const state = this.shifts.get(name);
+  private async executeCron(name: string): Promise<void> {
+    const state = this.crons.get(name);
     if (!state) return;
 
     if (state.status === "running") return;
@@ -225,7 +225,7 @@ export class Scheduler {
       // Stream live output into state so TUI can show it
       state.lastResult = { success: false, output: "", durationMs: 0, exitCode: null };
 
-      const result = await runShift(state.config, this.credentials, controller.signal, (chunk) => {
+      const result = await runCron(state.config, this.credentials, controller.signal, (chunk) => {
         if (state.lastResult) {
           state.lastResult.output += chunk;
           this.notify();
@@ -250,7 +250,7 @@ export class Scheduler {
         sessionId: result.sessionId,
       };
       saveHistory(this.history);
-      saveShiftLog(name, result);
+      saveCronLog(name, result);
 
       if (state.config.notify === "slack") {
         notifySlack(name, result, this.credentials).catch(() => {});

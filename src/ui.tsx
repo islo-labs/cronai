@@ -1,9 +1,9 @@
 import React from "react";
 import { Box, Text, useInput, useApp } from "ink";
-import type { ShiftState, ShiftStatus } from "./scheduler.js";
+import type { CronState, CronStatus } from "./scheduler.js";
 import { formatRelativeTime, describeCron } from "./cron.js";
 
-function statusColor(status: ShiftStatus): string {
+function statusColor(status: CronStatus): string {
   switch (status) {
     case "idle": return "gray";
     case "running": return "yellow";
@@ -12,7 +12,7 @@ function statusColor(status: ShiftStatus): string {
   }
 }
 
-function statusLabel(status: ShiftStatus): string {
+function statusLabel(status: CronStatus): string {
   switch (status) {
     case "idle": return "idle";
     case "running": return "⟳ running";
@@ -39,7 +39,7 @@ function Header() {
   return (
     <Box>
       <Text bold color="gray">
-        <Text>{pad("SHIFT", COL.name)}</Text>
+        <Text>{pad("CRON", COL.name)}</Text>
         <Text>{pad("SCHEDULE", COL.schedule)}</Text>
         <Text>{pad("STATUS", COL.status)}</Text>
         <Text>{pad("LAST RUN", COL.lastRun)}</Text>
@@ -49,19 +49,19 @@ function Header() {
   );
 }
 
-function ShiftRow({ shift, selected }: { shift: ShiftState; selected: boolean }) {
-  const color = statusColor(shift.status);
+function CronRow({ cron, selected }: { cron: CronState; selected: boolean }) {
+  const color = statusColor(cron.status);
   const pointer = selected ? "▸ " : "  ";
 
   return (
     <Box>
       <Text inverse={selected}>
         <Text>{pointer}</Text>
-        <Text bold={selected}>{pad(shift.config.name, COL.name)}</Text>
-        <Text dimColor>{pad(describeCron(shift.config.schedule), COL.schedule)}</Text>
-        <Text color={color}>{pad(statusLabel(shift.status), COL.status)}</Text>
-        <Text dimColor>{pad(formatLastRun(shift.lastRun), COL.lastRun)}</Text>
-        <Text>{formatRelativeTime(shift.nextRun)}</Text>
+        <Text bold={selected}>{pad(cron.config.name, COL.name)}</Text>
+        <Text dimColor>{pad(describeCron(cron.config.schedule), COL.schedule)}</Text>
+        <Text color={color}>{pad(statusLabel(cron.status), COL.status)}</Text>
+        <Text dimColor>{pad(formatLastRun(cron.lastRun), COL.lastRun)}</Text>
+        <Text>{formatRelativeTime(cron.nextRun)}</Text>
       </Text>
     </Box>
   );
@@ -82,27 +82,27 @@ function StatusBar({ mode }: { mode: "table" | "output" }) {
   );
 }
 
-function OutputView({ shift }: { shift: ShiftState }) {
-  const isRunning = shift.status === "running";
-  const hasOutput = (shift.lastResult?.output?.length ?? 0) > 0;
-  const hasError = (shift.lastResult?.error?.length ?? 0) > 0;
+function OutputView({ cron }: { cron: CronState }) {
+  const isRunning = cron.status === "running";
+  const hasOutput = (cron.lastResult?.output?.length ?? 0) > 0;
+  const hasError = (cron.lastResult?.error?.length ?? 0) > 0;
 
   let output: string;
   if (isRunning && !hasOutput) {
-    output = "Running — output will appear when the shift completes...";
+    output = "Running — output will appear when the cron completes...";
   } else if (hasOutput) {
-    output = shift.lastResult!.output;
+    output = cron.lastResult!.output;
   } else if (hasError) {
-    output = shift.lastResult!.error!;
+    output = cron.lastResult!.error!;
   } else {
     output = "No output yet — press [r] to run or wait for the next scheduled run.";
   }
 
   const statusText = isRunning
     ? "⟳ running..."
-    : shift.lastResult?.success
+    : cron.lastResult?.success
       ? "✓ success"
-      : shift.lastResult
+      : cron.lastResult
         ? "✗ failed"
         : "no runs yet";
 
@@ -110,11 +110,11 @@ function OutputView({ shift }: { shift: ShiftState }) {
     <Box flexDirection="column" padding={1}>
       <Box marginBottom={1}>
         <Text bold>
-          {shift.config.name}
+          {cron.config.name}
           <Text dimColor>
             {" "}— {statusText}
-            {shift.lastResult && !isRunning ? ` (${(shift.lastResult.durationMs / 1000).toFixed(1)}s)` : ""}
-            {shift.lastResult?.cost ? ` $${shift.lastResult.cost.toFixed(4)}` : ""}
+            {cron.lastResult && !isRunning ? ` (${(cron.lastResult.durationMs / 1000).toFixed(1)}s)` : ""}
+            {cron.lastResult?.cost ? ` $${cron.lastResult.cost.toFixed(4)}` : ""}
           </Text>
         </Text>
       </Box>
@@ -124,13 +124,13 @@ function OutputView({ shift }: { shift: ShiftState }) {
 }
 
 export function Dashboard({
-  shifts,
+  crons,
   onRun,
   onDelete,
   onResume,
   onQuit,
 }: {
-  shifts: ShiftState[];
+  crons: CronState[];
   onRun: (name: string) => void;
   onDelete: (name: string) => void;
   onResume: (name: string) => void;
@@ -146,10 +146,10 @@ export function Dashboard({
     if (mode === "output") {
       if (key.escape || key.return) setMode("table");
       else if (input === "r") {
-        const s = shifts[selectedIndex];
+        const s = crons[selectedIndex];
         if (s && s.status !== "running") onRun(s.config.name);
       } else if (input === "s") {
-        const s = shifts[selectedIndex];
+        const s = crons[selectedIndex];
         if (s) onResume(s.config.name);
       }
       return;
@@ -158,30 +158,30 @@ export function Dashboard({
     if (key.upArrow) {
       setSelectedIndex((i) => Math.max(0, i - 1));
     } else if (key.downArrow) {
-      setSelectedIndex((i) => Math.min(shifts.length - 1, i + 1));
+      setSelectedIndex((i) => Math.min(crons.length - 1, i + 1));
     } else if (input === "r") {
-      const s = shifts[selectedIndex];
+      const s = crons[selectedIndex];
       if (s && s.status !== "running") onRun(s.config.name);
     } else if (input === "d") {
-      const s = shifts[selectedIndex];
+      const s = crons[selectedIndex];
       if (s && s.status !== "running") {
         onDelete(s.config.name);
-        setSelectedIndex((i) => Math.min(i, shifts.length - 2));
+        setSelectedIndex((i) => Math.min(i, crons.length - 2));
       }
     } else if (input === "s") {
-      const s = shifts[selectedIndex];
+      const s = crons[selectedIndex];
       if (s) onResume(s.config.name);
     } else if (key.return) {
       setMode("output");
     }
   });
 
-  const selected = shifts[selectedIndex];
+  const selected = crons[selectedIndex];
 
   if (mode === "output" && selected) {
     return (
       <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
-        <OutputView shift={selected} />
+        <OutputView cron={selected} />
         <StatusBar mode="output" />
       </Box>
     );
@@ -190,12 +190,12 @@ export function Dashboard({
   return (
     <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1} paddingY={1}>
       <Box marginBottom={1}>
-        <Text bold color="cyan">overtime</Text>
-        <Text dimColor> — {shifts.length} shifts</Text>
+        <Text bold color="cyan">cronai</Text>
+        <Text dimColor> — {crons.length} crons</Text>
       </Box>
       <Header />
-      {shifts.map((s, i) => (
-        <ShiftRow key={s.config.name} shift={s} selected={i === selectedIndex} />
+      {crons.map((s, i) => (
+        <CronRow key={s.config.name} cron={s} selected={i === selectedIndex} />
       ))}
       <StatusBar mode="table" />
     </Box>

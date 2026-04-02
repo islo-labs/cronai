@@ -4,12 +4,12 @@ import { resolve } from "node:path";
 import { homedir } from "node:os";
 import { program } from "commander";
 import { loadConfig, loadCredentials } from "./config.js";
-import { runShift } from "./runner.js";
+import { runCron } from "./runner.js";
 import { notifySlack } from "./notify.js";
 
-const DIR = resolve(homedir(), ".overtime");
+const DIR = resolve(homedir(), ".cronai");
 const PID_FILE = resolve(DIR, "pid");
-const SOCK = resolve(DIR, "overtime.sock");
+const SOCK = resolve(DIR, "cronai.sock");
 
 function isDaemonRunning(): boolean {
   if (!existsSync(PID_FILE)) return false;
@@ -47,7 +47,7 @@ function ensureDaemon(configPath?: string) {
 }
 
 program
-  .name("overtime")
+  .name("cronai")
   .description("Cron for AI agents")
   .version("0.1.3")
   .option("-c, --config <path>", "Path to config file");
@@ -64,8 +64,8 @@ program
     const React = await import("react");
     const { App } = await import("./app.js");
 
-    const onResume = (sessionId: string, shiftName: string) => {
-      console.log(`\nResuming session for "${shiftName}"...\n`);
+    const onResume = (sessionId: string, cronName: string) => {
+      console.log(`\nResuming session for "${cronName}"...\n`);
       spawnSync("claude", ["--resume", sessionId], {
         stdio: "inherit",
         cwd: process.cwd(),
@@ -81,26 +81,26 @@ program
     await waitUntilExit();
   });
 
-// Run a single shift immediately (no TUI, no daemon)
+// Run a single cron immediately (no TUI, no daemon)
 program
-  .command("run <shift>")
-  .description("Run a single shift immediately (no TUI)")
-  .action(async (shiftName: string, _, cmd) => {
+  .command("run <cron>")
+  .description("Run a single cron immediately (no TUI)")
+  .action(async (cronName: string, _, cmd) => {
     const opts = cmd.optsWithGlobals();
     const config = loadConfig(opts.config);
     const credentials = loadCredentials();
-    const shift = config.shifts.find((s) => s.name === shiftName);
+    const cron = config.crons.find((s) => s.name === cronName);
 
-    if (!shift) {
+    if (!cron) {
       console.error(
-        `Shift "${shiftName}" not found. Available: ${config.shifts.map((s) => s.name).join(", ")}`
+        `Cron "${cronName}" not found. Available: ${config.crons.map((s) => s.name).join(", ")}`
       );
       process.exit(1);
       return;
     }
 
-    console.log(`Running "${shiftName}"...`);
-    const result = await runShift(shift, credentials);
+    console.log(`Running "${cronName}"...`);
+    const result = await runCron(cron, credentials);
 
     console.log(result.output);
     if (result.error) console.error(result.error);
@@ -109,8 +109,8 @@ program
     const cost = result.cost ? ` | $${result.cost.toFixed(4)}` : "";
     console.log(`\n${result.success ? "✓" : "✗"} ${duration}s${cost}`);
 
-    if (shift.notify === "slack") {
-      await notifySlack(shiftName, result, credentials);
+    if (cron.notify === "slack") {
+      await notifySlack(cronName, result, credentials);
     }
 
     process.exit(result.success ? 0 : 1);
@@ -133,7 +133,7 @@ program
 // Init wizard
 program
   .command("init")
-  .description("Set up overtime: connect services and create config")
+  .description("Set up cronai: connect services and create config")
   .action(async () => {
     const { init } = await import("./init.js");
     await init();

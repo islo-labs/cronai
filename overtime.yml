@@ -1,0 +1,8 @@
+  - name: stale-prs
+    schedule: "every weekday at 9am"
+    task: "Find PRs with no activity for 3+ days, ping the authors with a friendly reminder comment"
+    notify: slack
+  - name: dep-updates
+    schedule: "every monday at 2am"
+    task: "Update outdated dependencies, run tests, and open a PR if everything passes"
+    notify: slack

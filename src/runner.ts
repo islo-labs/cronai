@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import type { ShiftConfig, Credentials } from "./config.js";
+import type { CronConfig, Credentials } from "./config.js";
 
 export interface JobResult {
   success: boolean;
@@ -11,8 +11,8 @@ export interface JobResult {
   sessionId?: string;
 }
 
-export function runShift(
-  job: ShiftConfig,
+export function runCron(
+  job: CronConfig,
   credentials?: Credentials,
   signal?: AbortSignal,
   onOutput?: (chunk: string) => void,

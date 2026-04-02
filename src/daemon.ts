@@ -5,8 +5,8 @@ import { homedir } from "node:os";
 import { loadConfig, loadCredentials } from "./config.js";
 import { Scheduler } from "./scheduler.js";
 
-const DIR = resolve(homedir(), ".overtime");
-const SOCK = resolve(DIR, "overtime.sock");
+const DIR = resolve(homedir(), ".cronai");
+const SOCK = resolve(DIR, "cronai.sock");
 const PID_FILE = resolve(DIR, "pid");
 
 export function startDaemon(configPath?: string) {
@@ -17,14 +17,14 @@ export function startDaemon(configPath?: string) {
 
   const config = loadConfig(configPath);
   const credentials = loadCredentials();
-  const scheduler = new Scheduler(config.shifts, credentials, config.configPath);
+  const scheduler = new Scheduler(config.crons, credentials, config.configPath);
 
   const clients = new Set<Socket>();
 
   function broadcast() {
     const state = JSON.stringify({
       type: "state",
-      shifts: scheduler.getShifts().map((s) => ({
+      crons: scheduler.getCrons().map((s) => ({
         name: s.config.name,
         schedule: s.config.schedule,
         status: s.status,
@@ -61,7 +61,7 @@ export function startDaemon(configPath?: string) {
         try {
           const cmd = JSON.parse(line);
           if (cmd.cmd === "run") scheduler.runNow(cmd.name);
-          if (cmd.cmd === "delete") scheduler.deleteShift(cmd.name);
+          if (cmd.cmd === "delete") scheduler.deleteCron(cmd.name);
         } catch {}
       }
     });
