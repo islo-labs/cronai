@@ -84,8 +84,19 @@ function StatusBar({ mode }: { mode: "table" | "output" }) {
 
 function OutputView({ shift }: { shift: ShiftState }) {
   const isRunning = shift.status === "running";
-  const output =
-    shift.lastResult?.output || shift.lastResult?.error || "No output yet — press [r] to run or wait for the next scheduled run.";
+  const hasOutput = (shift.lastResult?.output?.length ?? 0) > 0;
+  const hasError = (shift.lastResult?.error?.length ?? 0) > 0;
+
+  let output: string;
+  if (isRunning && !hasOutput) {
+    output = "Running — output will appear when the shift completes...";
+  } else if (hasOutput) {
+    output = shift.lastResult!.output;
+  } else if (hasError) {
+    output = shift.lastResult!.error!;
+  } else {
+    output = "No output yet — press [r] to run or wait for the next scheduled run.";
+  }
 
   const statusText = isRunning
     ? "⟳ running..."
