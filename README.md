@@ -5,7 +5,7 @@ Cron for AI agents. Schedule agent tasks like you schedule cron jobs.
 ## Automated PR reviews in 30 seconds
 
 ```bash
-npx cronai init
+npx cron-ai init
 ```
 
 ```yaml
@@ -21,7 +21,7 @@ crons:
 ```
 
 ```bash
-npx cronai
+npx cron-ai
 ```
 
 That's it. Every hour, Claude reviews your open PRs and leaves comments on GitHub. You get a Slack notification when it's done.
