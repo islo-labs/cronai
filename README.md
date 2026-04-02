@@ -2,6 +2,10 @@
 
 Cron for AI agents. Schedule agent tasks like you schedule cron jobs.
 
+> Turn on sound
+
+https://github.com/user-attachments/assets/7ac272e8-178a-4b02-a195-e0aa33b01889
+
 ## Automated PR reviews in 30 seconds
 
 ```bash
