@@ -89,7 +89,7 @@ function OutputView({ cron }: { cron: CronState }) {
 
   let output: string;
   if (isRunning && !hasOutput) {
-    output = "Running — output will appear when the cron completes...";
+    output = "Running — waiting for output...";
   } else if (hasOutput) {
     output = cron.lastResult!.output;
   } else if (hasError) {
