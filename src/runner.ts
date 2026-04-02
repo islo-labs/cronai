@@ -99,10 +99,14 @@ export function runShift(
 
     child.on("close", (code: number | null) => {
       clearTimeout(timer);
-      // Process remaining buffer
-      if (buffer.trim()) {
+      // Process any remaining lines in buffer
+      for (const line of buffer.split("\n")) {
+        if (!line.trim()) continue;
         try {
-          const event = JSON.parse(buffer);
+          const event = JSON.parse(line);
+          if (event.type === "system" && event.subtype === "init" && event.session_id) {
+            sessionId = event.session_id;
+          }
           if (event.type === "result") {
             sessionId = event.session_id;
             costUsd = event.total_cost_usd;
