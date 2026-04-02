@@ -1,10 +1,11 @@
 {
-  "name": "itsovertime",
-  "version": "0.3.3",
+  "name": "otai",
+  "version": "0.1.0",
   "description": "Cron for AI agents",
   "type": "module",
   "bin": {
-    "itsovertime": "./dist/index.js"
+    "otai": "./dist/index.js",
+    "overtime": "./dist/index.js"
   },
   "files": [
     "dist"

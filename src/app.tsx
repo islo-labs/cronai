@@ -6,7 +6,7 @@ import { homedir } from "node:os";
 import type { ShiftStatus } from "./scheduler.js";
 import { Dashboard } from "./ui.js";
 
-const SOCK = resolve(homedir(), ".itsovertime", "overtime.sock");
+const SOCK = resolve(homedir(), ".overtime", "overtime.sock");
 
 interface DaemonShift {
   name: string;

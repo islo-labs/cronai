@@ -5,7 +5,7 @@ import { homedir } from "node:os";
 import { loadConfig, loadCredentials } from "./config.js";
 import { Scheduler } from "./scheduler.js";
 
-const DIR = resolve(homedir(), ".itsovertime");
+const DIR = resolve(homedir(), ".overtime");
 const SOCK = resolve(DIR, "overtime.sock");
 const PID_FILE = resolve(DIR, "pid");
 

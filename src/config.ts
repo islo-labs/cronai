@@ -53,7 +53,7 @@ export interface Credentials {
 }
 
 export function loadCredentials(): Credentials {
-  const credPath = resolve(homedir(), ".itsovertime", "credentials.json");
+  const credPath = resolve(homedir(), ".overtime", "credentials.json");
   let stored: Record<string, string> = {};
 
   if (existsSync(credPath)) {
@@ -88,7 +88,7 @@ export function loadConfig(configPath?: string): OvertimeConfig & { configPath: 
 
   if (!found) {
     console.error(
-      `No config file found. Run "itsovertime init" to get started, or create overtime.yml manually.`
+      `No config file found. Run "overtime init" to get started, or create overtime.yml manually.`
     );
     process.exit(1);
   }

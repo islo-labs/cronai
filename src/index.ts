@@ -7,7 +7,7 @@ import { loadConfig, loadCredentials } from "./config.js";
 import { runShift } from "./runner.js";
 import { notifySlack } from "./notify.js";
 
-const DIR = resolve(homedir(), ".itsovertime");
+const DIR = resolve(homedir(), ".overtime");
 const PID_FILE = resolve(DIR, "pid");
 const SOCK = resolve(DIR, "overtime.sock");
 
@@ -47,7 +47,7 @@ function ensureDaemon(configPath?: string) {
 }
 
 program
-  .name("itsovertime")
+  .name("overtime")
   .description("Cron for AI agents")
   .version("0.1.3")
   .option("-c, --config <path>", "Path to config file");
@@ -133,7 +133,7 @@ program
 // Init wizard
 program
   .command("init")
-  .description("Set up itsovertime: connect services and create config")
+  .description("Set up overtime: connect services and create config")
   .action(async () => {
     const { init } = await import("./init.js");
     await init();

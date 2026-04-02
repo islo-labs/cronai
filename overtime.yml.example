@@ -1,5 +1,5 @@
 # overtime.yml — Cron for AI agents
-# Run "itsovertime init" to set up credentials, or set env vars directly.
+# Run "overtime init" to set up credentials, or set env vars directly.
 
 shifts:
   - name: pr-review

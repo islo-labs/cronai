@@ -4,7 +4,7 @@ import { homedir } from "node:os";
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 
-const CRED_DIR = resolve(homedir(), ".itsovertime");
+const CRED_DIR = resolve(homedir(), ".overtime");
 const CRED_FILE = resolve(CRED_DIR, "credentials.json");
 
 async function ask(rl: ReturnType<typeof createInterface>, question: string): Promise<string> {
@@ -14,7 +14,7 @@ async function ask(rl: ReturnType<typeof createInterface>, question: string): Pr
 export async function init() {
   const rl = createInterface({ input: stdin, output: stdout });
 
-  console.log("\n  itsovertime — cron for AI agents\n");
+  console.log("\n  overtime — cron for AI agents\n");
   console.log("  Let's get you set up.\n");
 
   const creds: Record<string, string> = {};
@@ -76,8 +76,8 @@ export async function init() {
   }
 
   console.log("  You're all set! Run:\n");
-  console.log("    itsovertime              # start the dashboard");
-  console.log("    itsovertime run pr-review # test a shift now\n");
+  console.log("    overtime              # start the dashboard");
+  console.log("    overtime run pr-review # test a shift now\n");
 
   rl.close();
 }

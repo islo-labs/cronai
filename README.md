@@ -1,11 +1,11 @@
-# itsovertime
+# overtime
 
 Cron for AI agents. Schedule agent tasks like you schedule cron jobs.
 
 ## Automated PR reviews in 30 seconds
 
 ```bash
-npx itsovertime init
+npx otai init
 ```
 
 ```yaml
@@ -21,10 +21,23 @@ shifts:
 ```
 
 ```bash
-npx itsovertime
+npx otai
 ```
 
 That's it. Every hour, Claude reviews your open PRs and leaves comments on GitHub. You get a Slack notification when it's done.
+
+## Install
+
+```bash
+# Use directly with npx
+npx otai
+
+# Or install globally for the full `overtime` command
+npm i -g otai
+overtime
+```
+
+Both `npx otai` and `overtime` (after global install) work identically.
 
 ## More examples
 
@@ -56,9 +69,9 @@ shifts:
 ## Dashboard
 
 ```
-$ npx itsovertime
+$ overtime
 
-┌─ itsovertime ─────────────────────────────────────────────────┐
+┌─ overtime ────────────────────────────────────────────────────┐
 │                                                               │
 │  SHIFT          SCHEDULE        STATUS    LAST RUN   NEXT RUN │
 │  pr-review      every hour      idle      3h ago     in 22m   │
@@ -75,10 +88,10 @@ The scheduler runs in the background — close the TUI and your shifts keep runn
 ## Getting started
 
 ```bash
-npx itsovertime init           # connect GitHub, Linear, Slack — creates overtime.yml
-npx itsovertime                # start dashboard (auto-starts background scheduler)
-npx itsovertime run pr-review  # test a single shift
-npx itsovertime stop           # stop the background scheduler
+overtime init           # connect GitHub, Linear, Slack — creates overtime.yml
+overtime                # start dashboard (auto-starts background scheduler)
+overtime run pr-review  # test a single shift
+overtime stop           # stop the background scheduler
 ```
 
 ## Live output
@@ -93,9 +106,9 @@ The agent ran overnight and opened a PR but you want to tweak it? Press `s` and 
 
 ## Why it's small
 
-itsovertime does exactly one thing: run Claude on a schedule and show you what happened.
+overtime does exactly one thing: run Claude on a schedule and show you what happened.
 
-It doesn't have GitHub integrations, Linear clients, or Slack SDKs. It doesn't need them. The agent already knows how to use `gh`, call APIs, and post to Slack. You just tell it what to do in plain English. itsovertime is just the clock.
+It doesn't have GitHub integrations, Linear clients, or Slack SDKs. It doesn't need them. The agent already knows how to use `gh`, call APIs, and post to Slack. You just tell it what to do in plain English. overtime is just the clock.
 
 ## Schedules
 
@@ -130,12 +143,12 @@ shifts:
 
 ## How it works
 
-itsovertime runs a background scheduler that fires shifts on their cron schedules. The TUI is just a viewer — open and close it anytime.
+overtime runs a background scheduler that fires shifts on their cron schedules. The TUI is just a viewer — open and close it anytime.
 
-1. `npx itsovertime` starts the scheduler as a background daemon (if not already running) and opens the TUI
+1. `overtime` starts the scheduler as a background daemon (if not already running) and opens the TUI
 2. When a shift fires, it spawns `claude --print` with streaming output
 3. The TUI connects via Unix socket for real-time state updates
-4. Shift history and logs persist to `~/.itsovertime/` across restarts
+4. Shift history and logs persist to `~/.overtime/` across restarts
 5. Overlap prevention — if a shift is still running when its next cron fires, it skips
 
 ## Requirements
@@ -145,7 +158,7 @@ itsovertime runs a background scheduler that fires shifts on their cron schedule
 
 ## Design philosophy
 
-- **The agent is the integration layer.** itsovertime doesn't talk to GitHub, Linear, or Slack. The agent does. itsovertime just schedules and watches.
+- **The agent is the integration layer.** overtime doesn't talk to GitHub, Linear, or Slack. The agent does. overtime just schedules and watches.
 - **One process, handful of files.** Small enough to understand completely. Read the whole source in one sitting.
 - **Small by design.** New capabilities come from modifying the source — not config options, plugin systems, or abstraction layers.
 - **No magic.** It reads YAML, runs cron, spawns a CLI, and draws a table. You can trace the entire flow in 10 minutes.

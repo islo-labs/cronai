@@ -1,10 +1,10 @@
-# Contributing to itsovertime
+# Contributing to overtime
 
-itsovertime is intentionally small. The goal is a codebase you can read in one sitting. Contributions should keep it that way.
+overtime is intentionally small. The goal is a codebase you can read in one sitting. Contributions should keep it that way.
 
 ## Philosophy
 
-**The agent is the integration layer.** itsovertime doesn't need a GitHub client, Linear SDK, or Slack library. The agent already knows how to use those. itsovertime just schedules and watches. If you're about to add an integration, ask yourself: can the agent just do this as part of its task?
+**The agent is the integration layer.** overtime doesn't need a GitHub client, Linear SDK, or Slack library. The agent already knows how to use those. overtime just schedules and watches. If you're about to add an integration, ask yourself: can the agent just do this as part of its task?
 
 **Small changes over big features.** A 10-line change to `runner.ts` that adds Cursor support is better than a 200-line plugin system. Keep it simple.
 

@@ -20,7 +20,7 @@ export interface ShiftState {
 
 // --- Persistent history ---
 
-const OVERTIME_DIR = resolve(homedir(), ".itsovertime");
+const OVERTIME_DIR = resolve(homedir(), ".overtime");
 const HISTORY_FILE = resolve(OVERTIME_DIR, "history.json");
 const LOGS_DIR = resolve(OVERTIME_DIR, "logs");
 
