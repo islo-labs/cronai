@@ -27,7 +27,7 @@ function toShiftState(s: DaemonShift) {
   return {
     config: { name: s.name, schedule: s.schedule } as any,
     status: s.status,
-    lastResult: s.output || s.error ? {
+    lastResult: s.status !== "idle" ? {
       success: s.success ?? false,
       output: s.output,
       error: s.error ?? undefined,
