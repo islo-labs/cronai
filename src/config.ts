@@ -16,7 +16,7 @@ const ShiftSchema = z.object({
   notify: z.enum(["slack"]).optional(),
   model: z.string().optional(),
   maxBudget: z.number().positive().optional(),
-  timeout: z.number().positive().default(300),
+  timeout: z.number().positive().default(3600),
   workdir: z.string().optional(),
   env: z.record(z.string(), z.string()).optional(),
 });
@@ -115,7 +115,7 @@ export function loadConfig(configPath?: string): OvertimeConfig & { configPath: 
       if (defaults.agent && shift.agent === "claude") {
         shift.agent = defaults.agent;
       }
-      if (defaults.timeout && shift.timeout === 300) {
+      if (defaults.timeout && shift.timeout === 3600) {
         shift.timeout = defaults.timeout;
       }
       if (defaults.notify && !shift.notify) {
