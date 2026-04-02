@@ -222,7 +222,15 @@ export class Scheduler {
     this.notify();
 
     try {
-      const result = await runShift(state.config, this.credentials, controller.signal);
+      // Stream live output into state so TUI can show it
+      state.lastResult = { success: false, output: "", durationMs: 0, exitCode: null };
+
+      const result = await runShift(state.config, this.credentials, controller.signal, (chunk) => {
+        if (state.lastResult) {
+          state.lastResult.output += chunk;
+          this.notify();
+        }
+      });
 
       state.status = result.success ? "done" : "error";
       state.lastResult = result;

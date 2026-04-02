@@ -83,8 +83,17 @@ function StatusBar({ mode }: { mode: "table" | "output" }) {
 }
 
 function OutputView({ shift }: { shift: ShiftState }) {
+  const isRunning = shift.status === "running";
   const output =
-    shift.lastResult?.output || shift.lastResult?.error || "No output yet — run the shift first or check ~/.itsovertime/logs/";
+    shift.lastResult?.output || shift.lastResult?.error || "No output yet — press [r] to run or wait for the next scheduled run.";
+
+  const statusText = isRunning
+    ? "⟳ running..."
+    : shift.lastResult?.success
+      ? "✓ success"
+      : shift.lastResult
+        ? "✗ failed"
+        : "no runs yet";
 
   return (
     <Box flexDirection="column" padding={1}>
@@ -92,8 +101,8 @@ function OutputView({ shift }: { shift: ShiftState }) {
         <Text bold>
           {shift.config.name}
           <Text dimColor>
-            {" "}— {shift.lastResult?.success ? "✓ success" : shift.lastResult ? "✗ failed" : "no runs yet"}
-            {shift.lastResult ? ` (${(shift.lastResult.durationMs / 1000).toFixed(1)}s)` : ""}
+            {" "}— {statusText}
+            {shift.lastResult && !isRunning ? ` (${(shift.lastResult.durationMs / 1000).toFixed(1)}s)` : ""}
             {shift.lastResult?.cost ? ` $${shift.lastResult.cost.toFixed(4)}` : ""}
           </Text>
         </Text>

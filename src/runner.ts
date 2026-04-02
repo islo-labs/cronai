@@ -14,7 +14,8 @@ export interface JobResult {
 export function runShift(
   job: ShiftConfig,
   credentials?: Credentials,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onOutput?: (chunk: string) => void
 ): Promise<JobResult> {
   return new Promise((resolve) => {
     const start = Date.now();
@@ -25,7 +26,6 @@ export function runShift(
 
     args.push(job.task);
 
-    // Inject stored credentials as env vars so the agent can use them
     const credEnv: Record<string, string> = {};
     if (credentials?.githubToken) credEnv.GITHUB_TOKEN = credentials.githubToken;
     if (credentials?.linearApiKey) credEnv.LINEAR_API_KEY = credentials.linearApiKey;
@@ -42,14 +42,17 @@ export function runShift(
     let stderr = "";
 
     child.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString();
+      const text = chunk.toString();
+      stdout += text;
+      onOutput?.(text);
     });
 
     child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString();
+      const text = chunk.toString();
+      stderr += text;
+      onOutput?.(`[stderr] ${text}`);
     });
 
-    // Timeout
     const timer = setTimeout(() => {
       child.kill("SIGTERM");
       setTimeout(() => child.kill("SIGKILL"), 5000);
@@ -59,7 +62,6 @@ export function runShift(
       clearTimeout(timer);
       const durationMs = Date.now() - start;
 
-      // Try to parse JSON output for metadata
       let output = stdout;
       let cost: number | undefined;
       let sessionId: string | undefined;
@@ -86,6 +88,7 @@ export function runShift(
 
     child.on("error", (err) => {
       clearTimeout(timer);
+      onOutput?.(`[error] ${err.message}`);
       resolve({
         success: false,
         output: "",
