@@ -1,10 +1,9 @@
 {
-  "name": "@islo-labs/otai",
-  "version": "0.1.1",
+  "name": "@islo-labs/overtime",
+  "version": "0.1.0",
   "description": "Cron for AI agents",
   "type": "module",
   "bin": {
-    "otai": "./dist/index.js",
     "overtime": "./dist/index.js"
   },
   "files": [
