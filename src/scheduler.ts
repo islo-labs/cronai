@@ -230,6 +230,10 @@ export class Scheduler {
           state.lastResult.output += chunk;
           this.notify();
         }
+      }, (sid) => {
+        if (state.lastResult) {
+          state.lastResult.sessionId = sid;
+        }
       });
 
       state.status = result.success ? "done" : "error";

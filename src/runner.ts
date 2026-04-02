@@ -15,7 +15,8 @@ export function runShift(
   job: ShiftConfig,
   credentials?: Credentials,
   signal?: AbortSignal,
-  onOutput?: (chunk: string) => void
+  onOutput?: (chunk: string) => void,
+  onSessionId?: (id: string) => void
 ): Promise<JobResult> {
   return new Promise((resolve) => {
     const start = Date.now();
@@ -53,6 +54,12 @@ export function runShift(
         if (!line.trim()) continue;
         try {
           const event = JSON.parse(line);
+
+          // Init event — grab session ID immediately
+          if (event.type === "system" && event.subtype === "init" && event.session_id) {
+            sessionId = event.session_id;
+            onSessionId?.(event.session_id);
+          }
 
           // Assistant message — extract text content
           if (event.type === "assistant" && event.message?.content) {
