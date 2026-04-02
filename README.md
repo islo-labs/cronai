@@ -75,10 +75,20 @@ The scheduler runs in the background — close the TUI and your shifts keep runn
 ## Getting started
 
 ```bash
-npx @islo-labs/overtime init           # connect GitHub, Linear, Slack — creates overtime.yml
-npx @islo-labs/overtime                # start dashboard (auto-starts background scheduler)
-npx @islo-labs/overtime run pr-review  # test a single shift
-npx @islo-labs/overtime stop           # stop the background scheduler
+# Install globally (recommended)
+npm i -g @islo-labs/overtime
+
+overtime init           # connect GitHub, Linear, Slack — creates overtime.yml
+overtime                # start dashboard (auto-starts background scheduler)
+overtime run pr-review  # test a single shift
+overtime stop           # stop the background scheduler
+```
+
+Or use directly with npx:
+
+```bash
+npx @islo-labs/overtime init
+npx @islo-labs/overtime
 ```
 
 ## Live output
