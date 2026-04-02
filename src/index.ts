@@ -1,58 +1,87 @@
-import { spawnSync } from "node:child_process";
+import { spawnSync, spawn } from "node:child_process";
+import { existsSync, readFileSync, unlinkSync } from "node:fs";
+import { resolve } from "node:path";
+import { homedir } from "node:os";
 import { program } from "commander";
 import { loadConfig, loadCredentials } from "./config.js";
-import { Scheduler } from "./scheduler.js";
 import { runShift } from "./runner.js";
 import { notifySlack } from "./notify.js";
+
+const DIR = resolve(homedir(), ".itsovertime");
+const PID_FILE = resolve(DIR, "pid");
+const SOCK = resolve(DIR, "overtime.sock");
+
+function isDaemonRunning(): boolean {
+  if (!existsSync(PID_FILE)) return false;
+  const pid = parseInt(readFileSync(PID_FILE, "utf-8").trim());
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    // Stale PID file
+    unlinkSync(PID_FILE);
+    return false;
+  }
+}
+
+function ensureDaemon(configPath?: string) {
+  if (isDaemonRunning()) return;
+
+  // Start daemon as detached background process
+  const args = [process.argv[1], "_daemon"];
+  if (configPath) args.push("--config", configPath);
+
+  const child = spawn(process.execPath, args, {
+    detached: true,
+    stdio: "ignore",
+    env: process.env,
+    cwd: process.cwd(),
+  });
+  child.unref();
+
+  // Wait for socket to appear
+  const deadline = Date.now() + 5000;
+  while (!existsSync(SOCK) && Date.now() < deadline) {
+    spawnSync("sleep", ["0.1"]);
+  }
+}
 
 program
   .name("itsovertime")
   .description("Cron for AI agents")
-  .version("0.1.0")
+  .version("0.1.3")
   .option("-c, --config <path>", "Path to config file");
 
-// Default command: start TUI
+// Default command: start TUI (auto-starts daemon)
 program
   .command("start", { isDefault: true })
-  .description("Start the scheduler with TUI dashboard")
+  .description("Open the dashboard (starts scheduler in background if needed)")
   .action(async (_, cmd) => {
     const opts = cmd.optsWithGlobals();
-    const config = loadConfig(opts.config);
-    const credentials = loadCredentials();
-    const scheduler = new Scheduler(config.shifts, credentials, config.configPath);
+    ensureDaemon(opts.config);
 
     const { render } = await import("ink");
     const React = await import("react");
     const { App } = await import("./app.js");
 
     const onResume = (sessionId: string, shiftName: string) => {
-      scheduler.stop().then(() => {
-        console.log(`\nResuming session for "${shiftName}"...\n`);
-        spawnSync("claude", ["--resume", sessionId], {
-          stdio: "inherit",
-          cwd: process.cwd(),
-          env: process.env,
-        });
-        process.exit(0);
+      console.log(`\nResuming session for "${shiftName}"...\n`);
+      spawnSync("claude", ["--resume", sessionId], {
+        stdio: "inherit",
+        cwd: process.cwd(),
+        env: process.env,
       });
+      process.exit(0);
     };
 
-    const { unmount, waitUntilExit } = render(
-      React.createElement(App, { scheduler, onResume })
+    const { waitUntilExit } = render(
+      React.createElement(App, { onResume })
     );
-
-    const shutdown = async () => {
-      await scheduler.stop();
-      unmount();
-    };
-
-    process.on("SIGINT", shutdown);
-    process.on("SIGTERM", shutdown);
 
     await waitUntilExit();
   });
 
-// Run a single shift immediately
+// Run a single shift immediately (no TUI, no daemon)
 program
   .command("run <shift>")
   .description("Run a single shift immediately (no TUI)")
@@ -78,15 +107,27 @@ program
 
     const duration = (result.durationMs / 1000).toFixed(1);
     const cost = result.cost ? ` | $${result.cost.toFixed(4)}` : "";
-    console.log(
-      `\n${result.success ? "✓" : "✗"} ${duration}s${cost}`
-    );
+    console.log(`\n${result.success ? "✓" : "✗"} ${duration}s${cost}`);
 
     if (shift.notify === "slack") {
       await notifySlack(shiftName, result, credentials);
     }
 
     process.exit(result.success ? 0 : 1);
+  });
+
+// Stop the background scheduler
+program
+  .command("stop")
+  .description("Stop the background scheduler")
+  .action(() => {
+    if (!isDaemonRunning()) {
+      console.log("No scheduler running.");
+      return;
+    }
+    const pid = parseInt(readFileSync(PID_FILE, "utf-8").trim());
+    process.kill(pid, "SIGTERM");
+    console.log("Scheduler stopped.");
   });
 
 // Init wizard
@@ -96,6 +137,15 @@ program
   .action(async () => {
     const { init } = await import("./init.js");
     await init();
+  });
+
+// Internal: daemon entry point (not user-facing)
+program
+  .command("_daemon", { hidden: true })
+  .action(async (_, cmd) => {
+    const opts = cmd.optsWithGlobals();
+    const { startDaemon } = await import("./daemon.js");
+    startDaemon(opts.config);
   });
 
 program.parse();
