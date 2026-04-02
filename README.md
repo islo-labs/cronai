@@ -101,6 +101,20 @@ Press `s` on any shift — running or completed — to drop into the Claude sess
 
 The agent ran overnight and opened a PR but you want to tweak it? Press `s` and you're in the same conversation with full context.
 
+## How is this different from `/loop`?
+
+Claude Code has a built-in `/loop` command that runs a prompt on an interval. overtime is for shifts you define once and run forever.
+
+- **Runs in the background.** `/loop` dies when you close the terminal. overtime keeps running.
+- **Multiple shifts.** `/loop` runs one thing. overtime manages many shifts with different schedules.
+- **Real cron schedules.** Not just "every 5 minutes" — "every monday at 2am", "every weekday at 9am".
+- **Dashboard.** See all your shifts, their status, last run time, and output in one place.
+- **Session resume.** Press `s` to jump back into any completed shift and keep working.
+- **Persistent history.** Logs survive restarts. See what happened last night.
+- **Config as code.** `overtime.yml` lives in your repo. Commit it, share it with the team.
+
+Think of `/loop` as a personal timer. overtime is infrastructure.
+
 ## Why it's small
 
 overtime does exactly one thing: run Claude on a schedule and show you what happened.
