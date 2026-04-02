@@ -1,5 +1,5 @@
 {
-  "name": "otai",
+  "name": "@islo-labs/otai",
   "version": "0.1.0",
   "description": "Cron for AI agents",
   "type": "module",
