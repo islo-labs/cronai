@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
-import { useApp } from "ink";
+import { useApp, Text } from "ink";
 import { createConnection, type Socket } from "node:net";
 import { resolve } from "node:path";
 import { homedir } from "node:os";
@@ -46,6 +46,7 @@ export function App({ onResume }: { onResume: (sessionId: string, name: string) 
   const socketRef = useRef<Socket | null>(null);
   const [crons, setCrons] = useState<ReturnType<typeof toCronState>[]>([]);
   const [connected, setConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState(false);
 
   useEffect(() => {
     const socket = createConnection(SOCK);
@@ -69,7 +70,10 @@ export function App({ onResume }: { onResume: (sessionId: string, name: string) 
       }
     });
 
-    socket.on("error", () => setConnected(false));
+    socket.on("error", () => {
+      setConnected(false);
+      setConnectionError(true);
+    });
     socket.on("close", () => { setConnected(false); exit(); });
 
     return () => { socket.destroy(); };
@@ -95,7 +99,16 @@ export function App({ onResume }: { onResume: (sessionId: string, name: string) 
     socketRef.current?.destroy();
   }, []);
 
-  if (!connected) return null;
+  if (!connected) {
+    if (connectionError) {
+      return React.createElement(
+        Text,
+        { color: "red" },
+        "Could not connect to the scheduler. Run `cron-ai stop` then try again."
+      );
+    }
+    return null;
+  }
 
   return (
     <Dashboard

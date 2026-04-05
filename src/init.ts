@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { homedir } from "node:os";
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
+import { parseToCron } from "./cron.js";
 
 const CRED_DIR = resolve(homedir(), ".cronai");
 const CRED_FILE = resolve(CRED_DIR, "credentials.json");
@@ -55,9 +56,21 @@ export async function init() {
     console.log("  3. Let's create your first cron.\n");
 
     const name = (await ask(rl, "  Cron name (e.g. pr-review): ")) || "pr-review";
-    const schedule =
-      (await ask(rl, "  How often? (e.g. every day at 9am): ")) ||
-      "every day at 9am";
+
+    let schedule = "";
+    while (true) {
+      const input =
+        (await ask(rl, "  How often? (e.g. every day at 9am): ")) ||
+        "every day at 9am";
+      if (parseToCron(input)) {
+        schedule = input;
+        break;
+      }
+      console.log(
+        `  ⚠ Could not parse "${input}". Try: "every hour", "every day at 9am", "every monday at 2pm", or a cron expression.`
+      );
+    }
+
     const task =
       (await ask(rl, "  What should the agent do?\n     ")) ||
       "Review open PRs in this repo and leave comments";
@@ -76,7 +89,7 @@ export async function init() {
 
   console.log("  You're all set! Run:\n");
   console.log("    cron-ai             # start the dashboard");
-  console.log("    cron-airun pr-review # test a cron now\n");
+  console.log("    cron-ai run pr-review # test a cron now\n");
 
   rl.close();
 }

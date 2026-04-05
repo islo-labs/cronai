@@ -58,7 +58,18 @@ program
   .description("Open the dashboard (starts scheduler in background if needed)")
   .action(async (_, cmd) => {
     const opts = cmd.optsWithGlobals();
+
+    // Validate config before starting daemon so errors are visible
+    loadConfig(opts.config);
+
     ensureDaemon(opts.config);
+
+    if (!existsSync(SOCK)) {
+      console.error(
+        "Failed to start the scheduler daemon. Check your config and try again."
+      );
+      process.exit(1);
+    }
 
     const { render } = await import("ink");
     const React = await import("react");
